@@ -100,8 +100,16 @@
   .attcount{font-size:12px;font-weight:700;color:var(--yes);margin-left:6px;vertical-align:1px}
   a.btn{text-decoration:none;display:inline-flex;align-items:center}
   .btn.call{color:var(--yes)}
-  .row.stack{flex-direction:column;align-items:stretch;gap:8px}
-  .row.stack .marks{justify-content:flex-end}
+  .gdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:2px}
+  .gdot.f{background:#ec6fa0} .gdot.m{background:#4a7fd6}
+  .mrow{padding:11px 0;border-bottom:1px solid var(--line)}
+  .mrow:last-child{border-bottom:0}
+  .mrow .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .mrow .top .name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sbtn2{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 9px;font-weight:700;font-size:12px;color:var(--ink);text-decoration:none;display:inline-flex;align-items:center}
+  .sbtn2.call{color:var(--yes)} .sbtn2.danger{color:var(--no)}
+  .mrow .acts{display:flex;align-items:center;gap:4px;flex:none}
+  .mrow .info{margin-top:4px}
   .divider{width:1px;align-self:stretch;background:var(--line);margin:4px 2px}
   .demo{font-size:12px;color:var(--sub);background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:14px;line-height:1.5}
 </style>
@@ -220,13 +228,13 @@ function fmtPhone(v){
   if (/^01\d{8,9}$/.test(d)) return d.length===10 ? `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}` : `${d.slice(0,3)}-${d.slice(3,7)}-${d.slice(7)}`;
   return String(v||"").trim();
 }
-function memberInfo(m){
+function memberInfo(m, opt={}){
   const parts = [];
   if (m.bday){ const n = daysToBday(m.bday); parts.push(n<=7 ? `<span class="bday-soon">🎂 ${bdayFull(m)} · ${ddayText(n)}</span>` : `<span>🎂 ${bdayFull(m)}</span>`); }
-  if (m.phone) parts.push(`<button class="tel" data-act="contact" data-id="${m.id}">📞 ${esc(fmtPhone(m.phone))}</button>`);
+  if (m.phone && opt.phone!==false) parts.push(`<button class="tel" data-act="contact" data-id="${m.id}">📞 ${esc(fmtPhone(m.phone))}</button>`);
   return parts.length ? `<div class="info">${parts.join("")}</div>` : "";
 }
-const nameTag = m => `${esc(m.name)}${m.gender==="m"?`<span class="gender m">남</span>`:m.gender==="f"?`<span class="gender f">여</span>`:""}`;
+const nameTag = m => `${m.gender==="f"?`<span class="gdot f" title="여"></span>`:m.gender==="m"?`<span class="gdot m" title="남"></span>`:""}${esc(m.name)}`;
 function memoBlock(m, tools){
   if (!m.memo) return tools ? `<div style="margin-top:6px"><button class="link" data-act="memoEdit" data-id="${m.id}">+ 메모 추가</button></div>` : "";
   return `<div class="memo">${esc(m.memo)}</div>` + (tools ? `<div style="margin-top:4px"><span class="memo-tools"><button class="link" data-act="memoEdit" data-id="${m.id}">메모 수정</button><button class="link danger" data-act="memoDelete" data-id="${m.id}">메모 삭제</button></span></div>` : "");
@@ -410,15 +418,16 @@ function viewMembers(){
           <button class="btn primary" style="flex:2" data-act="saveMember" data-id="${m.id}">저장</button>
         </div>
       </div>` : `
-      <div class="row stack">
-        <div style="min-width:0;flex:1"><div class="name">${nameTag(m)}${st[m.id].t?`<span class="attcount">출석 ${st[m.id].n}/${st[m.id].t}</span>`:""}</div>${memberInfo(m)}${memoBlock(m,true)}</div>
-        <div class="marks">
-          ${m.phone ? `<a class="btn call" href="tel:${telDigits(m.phone)}">전화</a>
-          <a class="btn call" href="sms:${telDigits(m.phone)}">문자</a>
-          <span class="divider" aria-hidden="true"></span>` : ""}
-          <button class="btn" data-act="editMember" data-id="${m.id}">수정</button>
-          <button class="btn danger" data-act="deleteMember" data-id="${m.id}">삭제</button>
+      <div class="mrow">
+        <div class="top">
+          <div class="name">${nameTag(m)}${st[m.id].t?`<span class="attcount">출석 ${st[m.id].n}/${st[m.id].t}</span>`:""}</div>
+          <div class="acts">
+            ${m.phone ? `<a class="sbtn2 call" href="tel:${telDigits(m.phone)}">전화</a><a class="sbtn2 call" href="sms:${telDigits(m.phone)}">문자</a><span class="divider" aria-hidden="true"></span>` : ""}
+            <button class="sbtn2" data-act="editMember" data-id="${m.id}">수정</button>
+            <button class="sbtn2 danger" data-act="deleteMember" data-id="${m.id}">삭제</button>
+          </div>
         </div>
+        ${memberInfo(m,{phone:false})}${memoBlock(m,true)}
       </div>`).join("") || `<div class="empty">아직 순원이 없어요.</div>`}</div>`;
 }
 
