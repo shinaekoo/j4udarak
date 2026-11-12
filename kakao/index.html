@@ -218,6 +218,15 @@
   .lock h1{color:#fff;letter-spacing:-.4px} .lock p{color:var(--sub)}
   .kakao{background:#FEE500!important;color:#191919!important;border:0!important}
   .loading{color:var(--sub)}
+  /* ===== 반듯한 디자인: 둥근 모서리 없음 (로고 제외) ===== */
+  *, *::before, *::after{border-radius:0!important}
+  .card,.stat,.form,.ecard,.btn,.sbtn2,.mk,.rbtn,.pick,.rolepick button,.big,.kakao,.whoami,.tab,.sortbtns,.sortbtns button,.seg button,.field input,.add input,textarea.memo-in,.modal,.sheet,.toast{box-shadow:none}
+  .card,.form,.ecard,.stat{border-width:1px}
+  .sortbtns{padding:0!important;gap:0;border:1px solid var(--line)} .sortbtns button{border-right:1px solid var(--line)!important} .sortbtns button:last-child{border-right:0!important}
+  .tabs{gap:0} .tab{border-bottom:2px solid transparent} .tab.on{background:#fff}
+  .gdot{width:8px;height:8px}
+  .pill,.rsvp-badge,.linked,.bday-soon{letter-spacing:.2px}
+  .lock .biglogo{border-radius:0}
 </style>
 </head>
 <body>
