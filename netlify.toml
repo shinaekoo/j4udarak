@@ -1,0 +1,7 @@
+# 두 Netlify 사이트가 이 저장소 하나를 같이 써요.
+#  - j4udarak     : 저장소 맨 위 index.html (순장용 출석체크 도구)
+#  - dreamworship : kakao/ 폴더 (순장·교역자 카카오 버전)
+# 자기 사이트 파일이 바뀌지 않았으면 배포를 건너뛰어 Netlify 사용량을 아껴요.
+# (ignore 명령이 0으로 끝나면 배포 건너뜀, 1이면 배포)
+[build]
+  ignore = "if [ \"$SITE_NAME\" = \"dreamworship\" ]; then git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- kakao; else git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':(exclude)kakao'; fi"
