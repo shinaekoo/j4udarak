@@ -404,7 +404,7 @@ function viewMembers(){
 }
 
 function viewStats(){
-  const evs = events().filter(e=>Object.keys(e.marks).length), list = members();
+  const evs = events().filter(e=>Object.keys(e.marks).length), { list } = sortedMembers();
   if (!evs.length) return `<div class="empty" style="padding-top:60px">아직 체크한 일정이 없어요.</div>`;
   const stat = m => { const n = evs.filter(e=>e.marks[m.id]==="o").length, t = evs.filter(e=>e.marks[m.id]).length;
     return { n, t, r: t?Math.round(n/t*100):0 }; };
@@ -415,7 +415,7 @@ function viewStats(){
       <div class="stat yes"><div class="n">${avg}</div><div class="l">평균 출석 인원</div></div>
       <div class="stat"><div class="n">${list.length}</div><div class="l">순원</div></div>
     </div>
-    <h2>순원별 출석률</h2>
+    <div class="sorter"><h2>순원별 출석률</h2>${sortToggle()}</div>
     <div class="card">${list.map(m=>{ const s=stat(m); return `
       <div class="row" style="display:block">
         <div style="display:flex;justify-content:space-between;align-items:center">
