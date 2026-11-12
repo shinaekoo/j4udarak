@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>J4U 순 출석부</title>
+<title>J4U 순모임 출석부</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 <style>
   :root{
@@ -227,10 +227,14 @@ function buildEvents({ includeCancelled=false } = {}){
       list.push({ id:"reg_"+date, date, time:s.time, title:s.title, type:"regular", cancelled });
     }
   }
-  Object.entries(store.events).forEach(([id,e])=> list.push({ id, ...e, type:"special" }));
+  Object.entries(store.events).forEach(([id,e])=>{
+    if (e.soonId && user && !isDarak() && e.soonId!==mySoon()) return;   // 다른 순의 순 모임은 숨김
+    list.push({ id, ...e, type: e.soonId ? "soon" : "special" });
+  });
   return list.sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time));
 }
 const resp = (eid, uid)=> store.responses[eid+"__"+uid] || {};
+const forEv = (e, uid)=> !e.soonId || store.members[uid]?.soonId===e.soonId;   // 이 모임 대상자인가
 const memberName = uid => { const m=store.members[uid]; return m ? (m.name || m.nickname || "멤버") : "멤버"; };
 
 /* ---------- 다락방 · 순 · 권한 ---------- */
@@ -243,6 +247,7 @@ const isDarak = (uid=user?.id)=> !!uid && ((!DEMO && CONFIG.ADMIN_IDS.includes(u
 const isSoonjang = (uid=user?.id)=> !!uid && store.members[uid]?.role==="soon" && !!store.soons[store.members[uid]?.soonId];
 const mySoon = ()=> store.members[user.id]?.soonId;
 const canManage = ()=> isDarak() || isSoonjang();
+const canCancel = e => isDarak() || (e.soonId && isSoonjang() && e.soonId===mySoon());
 // 내가 볼 수 있는 멤버 범위
 function scopeUids(filter){
   if (isDarak()){
@@ -506,7 +511,7 @@ function namesBlock(e, uids){
   const line = (label, list, withReason) => `<div><strong>${label}</strong> ${list.map(u=>esc(memberName(u)) + (withReason && resp(e.id,u).reason?` <span style="opacity:.7">(${esc(resp(e.id,u).reason)})</span>`:"")).join(", ")||"-"}</div>`;
   const block = list => line("참석", list.filter(u=>resp(e.id,u).rsvp==="yes")) + line("어려워요", list.filter(u=>resp(e.id,u).rsvp==="no"), true) + line("미응답", list.filter(u=>!resp(e.id,u).rsvp));
   if (isDarak() && soonFilter==="all"){
-    const groups = [...soonList().map(s=>[s.name, membersOf(s.id)]), ["미배정", membersOf("none")]].filter(([,l])=>l.length);
+    const groups = [...soonList().map(s=>[s.name, membersOf(s.id)]), ["미배정", membersOf("none")]].map(([n,l])=>[n,l.filter(u=>forEv(e,u))]).filter(([,l])=>l.length);
     return groups.map(([n,l])=>`<div class="grp">${esc(n)}</div>${block(l)}`).join("");
   }
   return block(uids);
@@ -521,6 +526,7 @@ function viewUpcoming(){
   if (!evs.length) return html + `<div class="empty">예정된 모임이 없어요.</div>`;
   return html + evs.map(e=>{
     const my = resp(e.id, user.id);
+    const allU = uids; { const uids = allU.filter(u=>forEv(e,u));
     const yes = uids.filter(u=>resp(e.id,u).rsvp==="yes");
     const no = uids.filter(u=>resp(e.id,u).rsvp==="no");
     const none = uids.filter(u=>!resp(e.id,u).rsvp);
@@ -533,7 +539,7 @@ function viewUpcoming(){
           <div class="ev-date">${fmtDate(e.date)}</div>
           <div class="ev-meta">${esc(e.title)}${e.time?" · "+fmtTime(e.time):""}${e.place?" · "+esc(e.place):""}</div>
         </div>
-        ${isToday?`<span class="badge b-today">오늘</span>`: e.type==="special"?`<span class="badge b-special">특별 모임</span>`:""}
+        ${isToday?`<span class="badge b-today">오늘</span>`: e.type==="special"?`<span class="badge b-special">특별 모임</span>`: e.type==="soon"?`<span class="badge b-special" style="background:var(--accent-soft);color:var(--accent)">${esc(soonName(e.soonId))} 모임</span>`:""}
       </div>
       <div class="counts">
         <button class="chip yes" data-act="names" data-id="${e.id}">참석 예정<b>${yes.length}</b></button>
@@ -557,15 +563,15 @@ function viewUpcoming(){
       ${canManage()?`
       <div class="admin-row">
         <button class="sbtn" data-act="roster" data-id="${e.id}">출석부 열기</button>
-        ${isDarak()?`<button class="sbtn danger" data-act="cancelEvent" data-id="${e.id}">모임 취소</button>`:""}
+        ${canCancel(e)?`<button class="sbtn danger" data-act="cancelEvent" data-id="${e.id}">모임 취소</button>`:""}
       </div>`:""}
-    </div>`;
+    </div>`; }
   }).join("");
 }
 
 function pastEvents(){ const t=todayStr(); return buildEvents().filter(e=>e.date<=t); }
 function statsFor(uid){
-  const past = pastEvents().filter(e=> e.date<todayStr() || resp(e.id,uid).attended!=null);
+  const past = pastEvents().filter(e=> forEv(e,uid) && (e.date<todayStr() || resp(e.id,uid).attended!=null));
   const att = past.filter(e=>resp(e.id,uid).attended===true).length;
   const answered = buildEvents().filter(e=>resp(e.id,uid).rsvp).length;
   return { total:past.length, att, rate: past.length? Math.round(att/past.length*100) : 0, answered };
@@ -598,7 +604,21 @@ function viewManage(){
   const recent = pastEvents().reverse().slice(0,8);
   const rate = list => { let a=0,t=0; list.forEach(u=>{ const s=statsFor(u); a+=s.att; t+=s.total; }); return t? Math.round(a/t*100):0; };
   const showBreakdown = isDarak() && soonFilter==="all";
-  return soonFilterBar() + `
+  const myS = settings();
+  const createCard = isSoonjang() ? `
+    <h2>${esc(soonName(mySoon()))} 모임 만들기</h2>
+    <div class="card">
+      <div class="grid2">
+        <div class="field"><label>날짜</label><input id="so_date" type="date" min="${todayStr()}"></div>
+        <div class="field"><label>시간</label><input id="so_time" type="time" value="${esc(myS.time)}"></div>
+      </div>
+      <div class="field"><label>모임 이름</label><input id="so_title" placeholder="예: 순모임, 순 나들이"></div>
+      <div class="field"><label>장소 (선택)</label><input id="so_place" placeholder="예: 카페, 교회 2층"></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:12px"><input id="so_weekly" type="checkbox"> 같은 요일·시간으로 4주 동안 만들기</label>
+      <div class="ev-meta" style="font-size:12px;margin:-4px 0 12px">우리 순 사람들에게만 보여요.</div>
+      <button class="sbtn primary" data-act="addSoonEvent">만들기</button>
+    </div>` : "";
+  return createCard + soonFilterBar() + `
     <h2>${esc(scopeTitle())} · 최근 ${CONFIG.PAST_WEEKS}주</h2>
     <div class="stats">
       <div class="stat"><div class="n">${uids.length}</div><div class="l">인원</div></div>
@@ -615,9 +635,9 @@ function viewManage(){
     <h2>모임별 출석</h2>
     <div class="card" style="padding:4px 16px">
       ${recent.map(e=>{
-        const n = uids.filter(u=>resp(e.id,u).attended===true).length;
-        const bd = showBreakdown ? `<div class="breakdown">${soonList().map(s=>{ const l=membersOf(s.id); return `${esc(s.name)} ${l.filter(u=>resp(e.id,u).attended===true).length}/${l.length}`; }).join(" · ")}</div>` : "";
-        return `<div class="row"><div><div class="t">${fmtDate(e.date)}${e.date===todayStr()?` <span class="pill yes">오늘</span>`:""}</div><div class="s">${esc(e.title)} · 출석 ${n}/${uids.length}</div>${bd}</div>
+        const eu = uids.filter(u=>forEv(e,u)); const n = eu.filter(u=>resp(e.id,u).attended===true).length;
+        const bd = showBreakdown && !e.soonId ? `<div class="breakdown">${soonList().map(s=>{ const l=membersOf(s.id); return `${esc(s.name)} ${l.filter(u=>resp(e.id,u).attended===true).length}/${l.length}`; }).join(" · ")}</div>` : "";
+        return `<div class="row"><div><div class="t">${fmtDate(e.date)}${e.date===todayStr()?` <span class="pill yes">오늘</span>`:""}</div><div class="s">${esc(e.title)}${e.type==="soon"?" · 순 모임":""} · 출석 ${n}/${eu.length}</div>${bd}</div>
           <button class="sbtn" data-act="roster" data-id="${e.id}">출석부</button></div>`;
       }).join("") || `<div class="empty">아직 지난 모임이 없어요.</div>`}
     </div>
@@ -715,7 +735,7 @@ $bg.addEventListener("click", e=>{ if(e.target===$bg && !$modal.querySelector("#
 let rosterId = null;
 function renderRoster(){
   const e = buildEvents({ includeCancelled:true }).find(x=>x.id===rosterId); if(!e) return closeModal();
-  const uids = scopeUids(soonFilter);
+  const uids = scopeUids(soonFilter).filter(u=>forEv(e,u));
   const row = u => { const r=resp(e.id,u); const ok=canMark(u); return `
     <div class="row">
       <div style="display:flex;align-items:center;gap:8px">${avatar(u,30)}
@@ -729,7 +749,7 @@ function renderRoster(){
     </div>`; };
   let body;
   if (isDarak() && soonFilter==="all"){
-    body = [...soonList().map(s=>[s.name, membersOf(s.id)]), ["미배정", membersOf("none")]].filter(([,l])=>l.length)
+    body = [...soonList().map(s=>[s.name, membersOf(s.id)]), ["미배정", membersOf("none")]].map(([n,l])=>[n,l.filter(u=>forEv(e,u))]).filter(([,l])=>l.length)
       .map(([n,l])=>`<div class="grp">${esc(n)} · 출석 ${l.filter(u=>resp(e.id,u).attended===true).length}/${l.length}</div>${l.map(row).join("")}`).join("");
   } else body = uids.map(row).join("");
   openModal(`
@@ -851,8 +871,19 @@ document.addEventListener("click", async ev=>{
         await save("events", "sp_"+Date.now(), { date, time:document.getElementById("n_time").value, title, place:document.getElementById("n_place").value.trim(), createdBy:user.id });
         toast("특별 모임을 추가했어요"); return render();
       }
+      case "addSoonEvent": {
+        if (!isSoonjang()) return;
+        const date = document.getElementById("so_date").value, title = document.getElementById("so_title").value.trim();
+        if (!date || !title) return toast("날짜와 모임 이름을 입력해 주세요");
+        const time = document.getElementById("so_time").value, place = document.getElementById("so_place").value.trim();
+        const times = document.getElementById("so_weekly").checked ? 4 : 1;
+        for (let k=0;k<times;k++){ const d=parse(date); d.setDate(d.getDate()+7*k);
+          await save("events", "so_"+Date.now()+"_"+k, { date:ymd(d), time, title, place, soonId:mySoon(), createdBy:user.id }); }
+        toast(times>1 ? "순 모임 4개를 만들었어요" : "순 모임을 만들었어요"); tab="upcoming"; return render();
+      }
       case "cancelEvent": {
-        if (!isDarak() || !confirm("이 모임을 취소할까요?")) return;
+        const ev = buildEvents({ includeCancelled:true }).find(x=>x.id===id);
+        if (!ev || !canCancel(ev) || !confirm("이 모임을 취소할까요?")) return;
         if (id.startsWith("reg_")){ const s=settings(); await save("config","settings",{ cancelled:[...new Set([...(s.cancelled||[]), id.slice(4)])] }); }
         else await remove("events", id);
         toast("모임을 취소했어요"); return render();
