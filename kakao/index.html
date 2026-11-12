@@ -160,6 +160,10 @@
   .rolepick button.on{border-color:var(--ink);background:var(--ink);color:#fff}
   .whoami{border:0;background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-weight:700;font-size:13px;color:var(--ink)}
   .hrow{display:flex;justify-content:space-between;align-items:center}
+  /* 교역자: 보기 전용 */
+  body.readonly .edit-only, body.readonly .memo-x, body.readonly .reason-mk{display:none!important}
+  body.readonly .mk{pointer-events:none}
+  body.readonly .mk:not(.on){display:none}
 </style>
 </head>
 <body>
@@ -245,13 +249,17 @@ async function setEv(eid, field, mid, val, quiet){
 function seedDemo(){
   const t = new Date(), d = n => { const x = new Date(t); x.setDate(x.getDate()+n); return ymd(x); };
   const ppl = [["김하늘","f","950601","01012345678"],["이도윤","m","880101","01022223333"],["박서연","f","",""],["최민준","m","920315","01044445555"],["정지우","f","",""]];
-  ppl.forEach(([n,g,b,p],i)=>{ const bd = parseBday(b)||{bday:"",byear:""}; store.members["dm"+i] = { name:n, gender:g, ...bd, phone:p, memo:"", selfMemo:"", kakaoId: i===2 ? "demo_member" : "" }; });
+  ppl.forEach(([n,g,b,p],i)=>{ const bd = parseBday(b)||{bday:"",byear:""}; store.members["dm"+i] = { name:n, gender:g, ...bd, phone:p, memo:"", selfMemo:"", kakaoId: i===2 ? "demo_member" : "", soonId:"demo_leader" }; });
+  [["한예린","f"],["오세훈","m"],["윤지아","f"]].forEach(([n,g],i)=> store.members["dn"+i] = { name:n, gender:g, bday:"", byear:"", phone:"", memo:"", selfMemo:"", kakaoId:"", soonId:"demo_leader2" });
+  store.leaders.demo_leader2 = { name:"이순장", role:"leader" };
+  store.leaders.demo_pastor = { name:"김목사", role:"pastor" };
+  store.events.dz1 = { date:d(-7), time:"20:00", title:"이순장 순모임", soonId:"demo_leader2", marks:{dn0:"o",dn1:"o",dn2:"x"}, reasons:{dn2:"야근"} };
   store.members.dm0.memo = "기도제목: 이직 준비";
   store.members.dm2.selfMemo = "이번 달은 주말 출근이 있어요";
-  store.leaders.demo_leader = { name:"순장(데모)" };
-  store.events.de1 = { date:d(-14), time:"19:00", title:"순모임", marks:{dm0:"o",dm1:"o",dm2:"x",dm3:"o",dm4:"o"}, reasons:{dm2:"출장"} };
-  store.events.de2 = { date:d(-7), time:"19:00", title:"순모임", marks:{dm0:"o",dm1:"x",dm2:"o",dm3:"o",dm4:"x"}, reasons:{dm1:"가족 행사"} };
-  store.events.de3 = { date:d(3), time:"19:00", title:"순모임", marks:{}, rsvp:{dm0:"yes",dm3:"no"}, rsvpReason:{dm3:"야근"} };
+  store.leaders.demo_leader = { name:"김순장", role:"leader" };
+  store.events.de1 = { soonId:"demo_leader", date:d(-14), time:"19:00", title:"순모임", marks:{dm0:"o",dm1:"o",dm2:"x",dm3:"o",dm4:"o"}, reasons:{dm2:"출장"} };
+  store.events.de2 = { soonId:"demo_leader", date:d(-7), time:"19:00", title:"순모임", marks:{dm0:"o",dm1:"x",dm2:"o",dm3:"o",dm4:"x"}, reasons:{dm1:"가족 행사"} };
+  store.events.de3 = { soonId:"demo_leader", date:d(3), time:"19:00", title:"순모임", marks:{}, rsvp:{dm0:"yes",dm3:"no"}, rsvpReason:{dm3:"야근"} };
 }
 
 /* ---------- 도우미 ---------- */
@@ -301,10 +309,18 @@ function bdayLine(m){
   const n = daysToBday(m.bday);
   return `<div class="info">${n<=7 ? `<span class="bday-soon">🎂 ${bdayFull(m)} · ${ddayText(n)}</span>` : `<span>🎂 ${bdayFull(m)}</span>`}</div>`;
 }
-const members = ()=> Object.entries(store.members).map(([id,m])=>({id,...m})).sort((a,b)=>a.name.localeCompare(b.name,"ko"));
-const events = ()=> Object.entries(store.events).map(([id,e])=>({id,...e,marks:e.marks||{},reasons:e.reasons||{},rsvp:e.rsvp||{},rsvpReason:e.rsvpReason||{}}))
+// 순: 순장 한 명 = 순 하나. 순원·일정에 soonId(순장 카카오 ID)가 붙어요. soonId가 없는 옛 데이터는 모든 순에서 보여요.
+const inSoon = (x, sid) => !sid || sid==="all" || !x.soonId || x.soonId===sid;
+let pastorSoon = "all";   // 교역자가 보고 있는 순
+const curSoon = ()=> !user ? null : isPastor() ? pastorSoon : store.leaders[user.id] ? user.id : (allMembers().find(m=>m.kakaoId===user.id)||{}).soonId;
+const allMembers = ()=> Object.entries(store.members).map(([id,m])=>({id,...m})).sort((a,b)=>a.name.localeCompare(b.name,"ko"));
+const members = (sid=curSoon())=> allMembers().filter(m=>inSoon(m,sid));
+const evMembers = e => members(e.soonId || curSoon());
+const soonList = ()=> Object.entries(store.leaders).filter(([,l])=>l.role!=="pastor").map(([id,l])=>({id,name:l.name||"순장"})).sort((a,b)=>a.name.localeCompare(b.name,"ko"));
+const soonLabel = sid => store.leaders[sid] ? `${store.leaders[sid].name||"순장"} 순` : "";
+const events = (sid=curSoon())=> Object.entries(store.events).map(([id,e])=>({id,...e,marks:e.marks||{},reasons:e.reasons||{},rsvp:e.rsvp||{},rsvpReason:e.rsvpReason||{}})).filter(e=>inSoon(e,sid))
   .sort((a,b)=> (b.date+(b.time||"")).localeCompare(a.date+(a.time||"")));
-const count = (e,v)=> members().filter(m=>e.marks[m.id]===v).length;
+const count = (e,v)=> evMembers(e).filter(m=>e.marks[m.id]===v).length;
 function attStat(mid, excludeId){
   const evs = events().filter(e=>e.id!==excludeId && e.marks[mid]);
   const n = evs.filter(e=>e.marks[mid]==="o").length;
@@ -335,8 +351,9 @@ function birthdayToasts(){
 /* ---------- 카카오 로그인 · 역할 ---------- */
 let user = null;   // { id, nickname }
 const isLeader = ()=> !!(user && store.leaders[user.id]);   // 순장·교역자 모두
+const isPastor = ()=> !!(user && store.leaders[user.id] && store.leaders[user.id].role==="pastor");   // 교역자: 전체 순 보기 전용
 const roleName = uid => (store.leaders[uid] && store.leaders[uid].role === "pastor") ? "교역자" : "순장";
-const myMember = ()=> user ? members().find(m=>m.kakaoId===user.id) : null;
+const myMember = ()=> user ? allMembers().find(m=>m.kakaoId===user.id) : null;
 async function initAuth(){
   const code = new URLSearchParams(location.search).get("code");
   if (code && !DEMO){
@@ -354,7 +371,7 @@ async function initAuth(){
   } else user = JSON.parse(localStorage.getItem(DEMO ? "v2_demo_user" : "v2_user") || "null");
 }
 function login(demoAs){
-  if (DEMO){ user = { id: demoAs, nickname: demoAs==="demo_leader" ? "순장" : "박서연" }; localStorage.setItem("v2_demo_user", JSON.stringify(user)); return start(); }
+  if (DEMO){ user = { id: demoAs, nickname: demoAs==="demo_leader" ? "김순장" : "김목사" }; localStorage.setItem("v2_demo_user", JSON.stringify(user)); return start(); }
   const force = localStorage.getItem("v2_force_login")==="1"; localStorage.removeItem("v2_force_login");
   location.href = `https://kauth.kakao.com/oauth/authorize?client_id=${CONFIG.KAKAO_REST_KEY}&redirect_uri=${encodeURIComponent(PAGE_URL)}&response_type=code${force?"&prompt=login":""}`;
 }
@@ -383,7 +400,7 @@ function render(){
         <p>순장·교역자 전용 출석체크예요<br>카카오로 로그인해 주세요</p>
         ${DEMO ? `
           <button class="kakao" data-act="login" data-v="demo_leader">데모: 순장으로 들어가기</button>
-          <button class="kakao" style="margin-top:8px;background:#fff;border:1px solid var(--line)" data-act="login" data-v="demo_member">데모: 순원(박서연)으로 들어가기</button>
+          <button class="kakao" style="margin-top:8px;background:#fff;border:1px solid var(--line)" data-act="login" data-v="demo_pastor">데모: 교역자로 들어가기</button>
           <div class="demo">지금은 <b>데모 모드</b>예요. 카카오 키와 Firebase 값을 넣으면 실제로 동작해요.</div>`
         : `<button class="kakao" data-act="login">카카오로 시작하기</button>
            ${localStorage.getItem("v2_force_login")==="1" ? `<div class="sub" style="margin-top:12px">다른 카카오 계정으로 로그인할 수 있어요.</div>` : ""}`}
@@ -397,10 +414,17 @@ function render(){
   if (!tabs.some(t=>t[0]===tab)) tab = tabs[0][0];
   document.getElementById("tabs").innerHTML = tabs.map(([v,l])=>`<button class="tab ${tab===v?"on":""}" data-tab="${v}">${l}</button>`).join("");
   document.getElementById("apptitle").textContent = CONFIG.GROUP_NAME + " 출석체크";
-  document.getElementById("subtitle").textContent = (DEMO ? "데모 · " : "") + (leader ? `${roleName(user.id)} · 순원 ${members().length}명` : `${me.name}님`);
+  document.body.classList.toggle("readonly", isPastor());
+  document.getElementById("subtitle").textContent = (DEMO ? "데모 · " : "") + (isPastor() ? `교역자 · ${pastorSoon==="all" ? "전체 순" : soonLabel(pastorSoon)} ${members().length}명 · 보기 전용` : leader ? `${roleName(user.id)} · 순원 ${members().length}명` : `${me.name}님`);
   document.getElementById("whoami").textContent = leader ? (store.leaders[user.id].name || roleName(user.id)) : me.name;
   const views = { events: ()=> openEvent && store.events[openEvent] ? viewCheck() : viewEvents(), members:viewMembers, stats:viewStats, mEvents:viewMyEvents, mStats:viewMyStats, mInfo:viewMyInfo };
-  $app.innerHTML = views[tab]();
+  const showBar = isPastor() && !(tab==="events" && openEvent);
+  $app.innerHTML = (showBar ? soonBar() : "") + views[tab]();
+}
+
+function soonBar(){
+  const opts = [["all","전체"], ...soonList().map(x=>[x.id, `${x.name} 순`])];
+  return `<div class="sortbtns" style="margin-top:14px;overflow-x:auto;flex-wrap:nowrap">${opts.map(([v,l])=>`<button class="${pastorSoon===v?"on":""}" style="white-space:nowrap" data-act="pastorSoon" data-v="${v}">${esc(l)}</button>`).join("")}</div>`;
 }
 
 /* ---------- 처음 로그인: 순원/순장 고르기 ---------- */
@@ -447,31 +471,31 @@ function eventForm(e){
 }
 function viewEvents(){
   const list = events(), t = today();
-  const row = e => { const o=count(e,"o"), x=count(e,"x"), total=members().length, done = total && o+x===total;
+  const row = e => { const o=count(e,"o"), x=count(e,"x"), total=evMembers(e).length, done = total && o+x===total;
     const ry = Object.values(e.rsvp).filter(v=>v==="yes").length, rn = Object.values(e.rsvp).filter(v=>v==="no").length;
     return `<div class="row click" data-act="open" data-id="${e.id}">
-      <div><div class="name">${esc(e.title)}</div><div class="sub">${dLabel(e.date)}${e.time?" · "+tLabel(e.time):""}</div></div>
+      <div><div class="name">${esc(e.title)}${isPastor()&&pastorSoon==="all"&&e.soonId?` <span class="pill">${esc(soonLabel(e.soonId))}</span>`:""}</div><div class="sub">${dLabel(e.date)}${e.time?" · "+tLabel(e.time):""}</div></div>
       <div style="text-align:right">${e.date===t?`<span class="pill today">오늘</span> `:""}${done?`<span class="pill done">체크 완료</span>`:""}
         <div class="sub" style="margin-top:4px">${e.date>t ? `예고 참석 ${ry} · 불참 ${rn}` : `출석 ${o} · 결석 ${x}`}</div></div>
     </div>`; };
   const upcoming = list.filter(e=>e.date>=t).reverse(), past = list.filter(e=>e.date<t);
   return `
-    ${showForm ? eventForm() : `<button class="big" data-act="newEvent">+ 일정 추가</button>`}
+    ${isPastor() ? "" : showForm ? eventForm() : `<button class="big" data-act="newEvent">+ 일정 추가</button>`}
     ${upcomingBdays().length ? `<div class="bdays"><b>🎂 다가오는 생일 (7일 이내)</b>${upcomingBdays().map(m=>`<div>${esc(m.name)} · ${bdayLabel(m.bday)} · <strong>${m.dd===0?"오늘!":"D-"+m.dd}</strong></div>`).join("")}</div>` : ""}
-    ${!members().length ? `<div class="demo">먼저 <b>순원</b> 탭에서 순원을 추가해 주세요.</div>` : ""}
+    ${!members().length && !isPastor() ? `<div class="demo">먼저 <b>순원</b> 탭에서 순원을 추가해 주세요.</div>` : ""}
     ${upcoming.length?`<h2>예정·오늘</h2><div class="card">${upcoming.map(row).join("")}</div>`:""}
     ${past.length?`<h2>지난 일정</h2><div class="card">${past.map(row).join("")}</div>`:""}
     ${!list.length?`<div class="empty" style="padding-top:40px">아직 일정이 없어요.<br>일정을 만들면 순원들이 미리 참석 여부를 알릴 수 있어요.</div>`:""}`;
 }
 function viewCheck(){
   const e = events().find(x=>x.id===openEvent);
-  const all = members(), o = count(e,"o"), x = count(e,"x");
+  const all = evMembers(e), o = count(e,"o"), x = count(e,"x");
   const list = checkFilter==="o" ? all.filter(m=>e.marks[m.id]==="o") : checkFilter==="x" ? all.filter(m=>e.marks[m.id]==="x") : all;
   const fbtn = (v,l,n)=> `<button class="${checkFilter===v?"on":""}" data-act="checkFilter" data-v="${v}">${l} ${n}</button>`;
   const ry = all.filter(m=>e.rsvp[m.id]==="yes").length, rn = all.filter(m=>e.rsvp[m.id]==="no").length;
   return `
     <button class="back" data-act="back">‹ 일정 목록</button>
-    ${editingEvent ? eventForm(e) : `<div class="evhead"><div class="t">${esc(e.title)}</div><div class="sub">${dLabel(e.date)}${e.time?" · "+tLabel(e.time):""}</div></div>`}
+    ${editingEvent ? eventForm(e) : `<div class="evhead"><div class="t">${esc(e.title)}</div><div class="sub">${e.soonId&&isPastor()?esc(soonLabel(e.soonId))+" · ":""}${dLabel(e.date)}${e.time?" · "+tLabel(e.time):""}</div></div>`}
     <div class="summary">
       <div class="stat yes"><div class="n">${o}</div><div class="l">출석</div></div>
       <div class="stat no"><div class="n">${x}</div><div class="l">결석</div></div>
@@ -481,8 +505,8 @@ function viewCheck(){
     <div class="sorter"><h2>출석체크</h2>${all.length?`<div class="sortbtns">${fbtn("all","전체",all.length)}${fbtn("o","출석",o)}${fbtn("x","결석",x)}</div>`:""}</div>
     ${all.length ? `
     <div class="tools">
-      <button class="btn" data-act="restAbsent">남은 사람 모두 결석</button>
-      <button class="btn" data-act="applyRsvp">예고대로 체크</button>
+      <button class="btn edit-only" data-act="restAbsent">남은 사람 모두 결석</button>
+      <button class="btn edit-only" data-act="applyRsvp">예고대로 체크</button>
       <button class="btn" data-act="copy">카톡용 복사</button>
     </div>
     <div class="card">${list.length ? "" : `<div class="empty">${checkFilter==="o"?"아직 출석한 사람이 없어요.":"결석한 사람이 없어요."}</div>`}${list.map(m=>{ const absent = e.marks[m.id]==="x", reason = e.reasons[m.id]||"", open = absent && reasonOpen.has(m.id), rv = e.rsvp[m.id]; return `
@@ -500,16 +524,16 @@ function viewCheck(){
       </div>
       ${open ? `<div class="reason-row"><input data-reason="${m.id}" data-field="reasons" value="${esc(reason)}" maxlength="60" placeholder="결석 사유 (예: 출장, 아파서)" enterkeyhint="done"></div>` : ""}`; }).join("")}</div>`
     : `<div class="card"><div class="empty">순원이 없어요. 아래에서 바로 추가할 수 있어요.</div></div>`}
-    <div class="add"><input id="addName" placeholder="순원 추가 (쉼표로 여러 명)" maxlength="60"><button class="btn primary" data-act="addMember">추가</button></div>
-    <div class="tools" style="margin-top:20px">${editingEvent?"":`<button class="btn" data-act="editEvent">일정 수정</button>`}<button class="btn danger" data-act="deleteEvent">일정 삭제</button></div>`;
+    <div class="add edit-only"><input id="addName" placeholder="순원 추가 (쉼표로 여러 명)" maxlength="60"><button class="btn primary" data-act="addMember">추가</button></div>
+    <div class="tools edit-only" style="margin-top:20px">${editingEvent?"":`<button class="btn" data-act="editEvent">일정 수정</button>`}<button class="btn danger" data-act="deleteEvent">일정 삭제</button></div>`;
 }
 
 /* ---------- 순장: 순원 ---------- */
 function viewMembers(){
   const { list, st } = sortedMembers();
   return `
-    <div class="add"><input id="addName" placeholder="이름 (쉼표로 여러 명: 홍길동, 김하늘)" maxlength="60"><button class="btn primary" data-act="addMember">추가</button></div>
-    <div class="sub" style="margin:0 4px">순원이 카카오로 로그인해서 자기 이름을 고르면 <span class="linked">카톡</span> 표시가 붙어요.</div>
+    <div class="add edit-only"><input id="addName" placeholder="이름 (쉼표로 여러 명: 홍길동, 김하늘)" maxlength="60"><button class="btn primary" data-act="addMember">추가</button></div>
+    <div class="sub edit-only" style="margin:0 4px">순원이 카카오로 로그인해서 자기 이름을 고르면 <span class="linked">카톡</span> 표시가 붙어요.</div>
     <div class="sorter"><h2>순원 ${list.length}명</h2>${sortToggle()}</div>
     <div class="card">${list.map(m=> editingMember===m.id ? `
       <div style="padding:12px 0;border-bottom:1px solid var(--line)">
@@ -533,11 +557,11 @@ function viewMembers(){
       <div class="mrow" id="mem-${m.id}">
         <div class="top">
           <div class="who">
-            <div class="name">${nameTag(m)}${m.kakaoId?`<span class="linked">카톡</span>`:""}</div>
+            <div class="name">${nameTag(m)}${m.kakaoId?`<span class="linked">카톡</span>`:""}${isPastor()&&pastorSoon==="all"&&m.soonId?` <span class="pill" style="font-size:11px">${esc(soonLabel(m.soonId))}</span>`:""}</div>
             ${st[m.id].t ? `<span class="attcount">출석 ${st[m.id].n}/${st[m.id].t}</span>` : ""}
             ${m.phone ? `<span class="divider" aria-hidden="true"></span><a class="sbtn2 call icon" href="tel:${telDigits(m.phone)}" aria-label="전화 걸기">${ICON_PHONE}</a><a class="sbtn2 call icon" href="sms:${telDigits(m.phone)}" aria-label="문자 보내기">${ICON_SMS}</a>` : ""}
           </div>
-          <div class="acts">
+          <div class="acts edit-only">
             <button class="sbtn2" data-act="memoEdit" data-id="${m.id}">메모</button>
             <button class="sbtn2" data-act="editMember" data-id="${m.id}">수정</button>
             <button class="sbtn2 danger" data-act="deleteMember" data-id="${m.id}">삭제</button>
@@ -644,7 +668,7 @@ async function addMembers(){
   const names = input.value.split(/[,，\n]/).map(clean).filter(Boolean);
   if (!names.length) return toast("이름을 입력해 주세요");
   const exists = new Set(members().map(m=>m.name)); let added = 0;
-  for (const n of names){ if (exists.has(n)) continue; exists.add(n); await put("members", newId("m_"), { name:n, kakaoId:"", createdAt:Date.now() }); added++; }
+  for (const n of names){ if (exists.has(n)) continue; exists.add(n); await put("members", newId("m_"), { name:n, kakaoId:"", soonId: user.id, createdAt:Date.now() }); added++; }
   toast(added ? `${added}명 추가했어요` : "이미 있는 이름이에요");
   document.getElementById("addName")?.focus();
 }
@@ -664,8 +688,11 @@ document.addEventListener("click", async ev=>{
   if (t){ tab=t.dataset.tab; openEvent=null; showForm=false; editingMember=null; editingEvent=false; reasonOpen.clear(); render(); window.scrollTo(0,0); return; }
   const b = ev.target.closest("[data-act]"); if(!b) return;
   const { act, id, v } = b.dataset;
+  const WRITE = ["newEvent","createEvent","editEvent","saveEvent","deleteEvent","mark","reasonOpen","restAbsent","applyRsvp","addMember","editMember","saveMember","memoEdit","memoDelete","unlinkMember","deleteMember","pickGender"];
+  if (isPastor() && WRITE.includes(act)) return toast("교역자는 보기만 할 수 있어요");
   try{
     switch(act){
+      case "pastorSoon": pastorSoon=v; return render();
       case "login": return login(v);
       case "logout": return logout();
       case "profile": return isLeader() ? renderProfile() : (tab="mInfo", render());
@@ -698,7 +725,7 @@ document.addEventListener("click", async ev=>{
       case "newEvent": showForm=true; return render();
       case "closeForm": showForm=false; return render();
       case "createEvent": { const data = readEventForm(); if (!data) return; const eid = newId("e_"); showForm=false; openEvent=eid; checkFilter="all";
-        await put("events", eid, { ...data, marks:{}, createdAt:Date.now() }); window.scrollTo(0,0); return toast("일정을 만들었어요"); }
+        await put("events", eid, { ...data, marks:{}, soonId: user.id, createdAt:Date.now() }); window.scrollTo(0,0); return toast("일정을 만들었어요"); }
       case "open": openEvent=id; tab="events"; editingEvent=false; checkFilter="all"; render(); return window.scrollTo(0,0);
       case "back": openEvent=null; editingEvent=false; reasonOpen.clear(); return render();
       case "editEvent": editingEvent=true; return render();
@@ -758,6 +785,7 @@ document.addEventListener("click", async ev=>{
 });
 document.addEventListener("change", async e=>{
   const mid = e.target.dataset && e.target.dataset.reason; if (!mid) return;
+  if (isPastor()) return;
   const field = e.target.dataset.field, eid = e.target.dataset.eid || openEvent, val = clean(e.target.value);
   try{
     reasonOpen.delete(field==="rsvpReason" ? mid+"_"+eid : mid);
