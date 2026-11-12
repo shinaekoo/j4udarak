@@ -116,25 +116,26 @@
 const CONFIG = {
   GROUP_NAME: "우리 순모임",
   // 카카오 개발자센터 > 내 애플리케이션 > 앱 키 > "REST API 키"
-  KAKAO_REST_KEY: "eaaf7e5dfc99217b7201ea326b81981f",
-    KAKAO_CLIENT_SECRET: "wPJCeNvvjc2irl1QT6qeM1Gxwu0rL2At",
+  KAKAO_REST_KEY: "YOUR_KAKAO_REST_API_KEY",
+  // REST API 키 상세 화면에서 '클라이언트 시크릿'이 켜져 있으면 그 코드를 넣으세요 (꺼져 있으면 빈칸)
+  KAKAO_CLIENT_SECRET: "",
   // Firebase 콘솔 > 프로젝트 설정 > 내 앱(웹) > SDK 설정
   FIREBASE: {
-    apiKey: "AIzaSyAmv1pHlLahYythXiT15cGqlEnHJEtg9e0",
-    authDomain: "darak-attendance.firebaseapp.com",
-  projectId: "darak-attendance",
-  storageBucket: "darak-attendance.firebasestorage.app",
-  messagingSenderId: "956597071783",
-  appId: "1:956597071783:web:68c888e812316699769082",
-  measurementId: "G-4YQZCZ2FPD"
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "",
+    appId: ""
   },
   // 처음 다락방장 카카오 회원번호 (로그인 후 프로필 메뉴에서 확인).
   // 이후 다락방장·순장 지정은 '설정' 탭에서 할 수 있어요.
   ADMIN_IDS: ["0000000000"],
-  // 다락방장 가입 비밀번호: 첫 로그인 화면의 '다락방장으로 가입'에서 이 비밀번호를 넣으면 다락방장이 돼요 (꼭 바꾸세요)
-  DARAK_PASSWORD: "j4u1234",
+  // 리더 비밀번호: 순장·다락방장으로 가입할 때 넣는 비밀번호 (꼭 바꾸세요)
+  DARAK_PASSWORD: "1234",
   // 정기 모임 기본값 (설정 탭에서 바꿀 수 있음) 0=일 … 6=토
   DEFAULT_REGULAR: { weekday: 6, time: "19:00", title: "다락방 모임" },
+  START_DATE: "2026-11-12",   // 이 날짜 이전 정기 모임은 만들지 않아요 (설정 탭에서 바꿀 수 있음)
   PAST_WEEKS: 12,   // 지난 기록에 보여줄 기간
   AHEAD_WEEKS: 8    // 다가오는 모임에 보여줄 기간
 };
@@ -211,10 +212,11 @@ function fmtDate(s){ const d=parse(s); return `${d.getMonth()+1}월 ${d.getDate(
 function fmtTime(t){ if(!t) return ""; let [h,m]=t.split(":").map(Number); const ap=h<12?"오전":"오후"; h=h%12||12; return `${ap} ${h}:${pad(m)}`; }
 
 /* ---------- 모임 목록 ---------- */
-function settings(){ return { ...CONFIG.DEFAULT_REGULAR, cancelled:[], ...(store.settings||{}) }; }
+function settings(){ return { ...CONFIG.DEFAULT_REGULAR, startDate: CONFIG.START_DATE, cancelled:[], ...(store.settings||{}) }; }
 function buildEvents({ includeCancelled=false } = {}){
   const s = settings(), list = [];
-  const start = new Date(); start.setDate(start.getDate() - CONFIG.PAST_WEEKS*7);
+  let start = new Date(); start.setDate(start.getDate() - CONFIG.PAST_WEEKS*7);
+  if (s.startDate && parse(s.startDate) > start) start = parse(s.startDate);
   const end = new Date(); end.setDate(end.getDate() + CONFIG.AHEAD_WEEKS*7);
   if (s.weekday != null && Number(s.weekday) >= 0){
     const d = new Date(start);
@@ -376,60 +378,71 @@ async function afterLogin(){
   maybeAskSoon();
 }
 const clean = v => String(v||"").trim().replace(/\s+/g," ");
-let joinError = "", joinMode = "member";
+let joinError = "", joinMode = "member", joinDraft = "";
 let joinSkipped = sessionStorage.getItem("att_join_later")==="1";
 function maybeAskSoon(force){
   if (!user || isDarak() || store.soons[mySoon()]) return;
   if (joinSkipped && !force) return;
   if ($bg.classList.contains("open") && !$modal.querySelector("#j_name")) return;
   const leaders = soonList().map(x=>x.leaderName).filter(Boolean);
-  const m = store.members[user.id] || {};
-  if (joinMode==="darak") return openModal(`
-    <h3>다락방장 로그인</h3>
-    <div class="ev-meta" style="margin-bottom:16px">다락방장은 순에 속하지 않고 모든 순을 볼 수 있어요.</div>
-    <div class="field"><label>내 이름</label><input id="j_name" maxlength="12" placeholder="예: 홍길동"></div>
-    <div class="field"><label>다락방장 비밀번호</label><input id="j_pw" type="password"></div>
-    ${joinError?`<div style="color:var(--no);font-size:13px;margin-bottom:10px">${esc(joinError)}</div>`:""}
-    <button class="checkin" style="margin-top:0" data-act="joinDarak">다락방장으로 로그인</button>
-    <button class="sbtn" style="width:100%;margin-top:10px;border:0;background:none;color:var(--sub)" data-act="joinMode">← 순원·순장으로 가입</button>
-  `);
+  const roleBtn = (v,l)=>`<button class="${joinMode===v?"on":""}" data-act="joinRole" data-id="${v}">${l}</button>`;
+  const fields = {
+    member: `
+      <div class="field"><label>내 이름</label><input id="j_name" maxlength="12" value="${esc(joinDraft)}" placeholder="실명으로 적어 주세요 (예: 홍길동)"></div>
+      <div class="field"><label>순장 이름</label><input id="j_leader" maxlength="12" list="j_leaders" placeholder="예: 김하늘"><datalist id="j_leaders">${leaders.map(n=>`<option value="${esc(n)}">`).join("")}</datalist></div>
+      <div class="ev-meta" style="font-size:12px;margin:-2px 0 12px">순장님이 아직 가입 전이어도 괜찮아요.</div>`,
+    soon: `
+      <div class="field"><label>내 이름</label><input id="j_name" maxlength="12" value="${esc(joinDraft)}" placeholder="실명으로 적어 주세요 (예: 김하늘)"></div>
+      <div class="field"><label>리더 비밀번호</label><input id="j_pw" type="password"></div>
+      <div class="ev-meta" style="font-size:12px;margin:-2px 0 12px">'내 이름 + 순'으로 순이 만들어져요. 순원이 먼저 등록해 둔 순이면 그 순을 맡게 돼요.</div>`,
+    darak: `
+      <div class="field"><label>내 이름</label><input id="j_name" maxlength="12" value="${esc(joinDraft)}" placeholder="실명으로 적어 주세요"></div>
+      <div class="field"><label>리더 비밀번호</label><input id="j_pw" type="password"></div>
+      <div class="ev-meta" style="font-size:12px;margin:-2px 0 12px">다락방장은 순에 속하지 않고 모든 순을 볼 수 있어요.</div>`
+  }[joinMode];
   openModal(`
     <h3>반가워요! 👋</h3>
-    <div class="ev-meta" style="margin-bottom:16px">처음 한 번만 입력하면 돼요.</div>
-    <div class="field"><label>내 이름</label><input id="j_name" maxlength="12" value="${esc(m.name && m.name!==m.nickname ? m.name : "")}" placeholder="실명으로 적어 주세요 (예: 홍길동)"></div>
-    <div class="field"><label>순장 이름</label><input id="j_leader" maxlength="12" list="j_leaders" placeholder="예: 김하늘"><datalist id="j_leaders">${leaders.map(n=>`<option value="${esc(n)}">`).join("")}</datalist></div>
-    <div class="ev-meta" style="font-size:12px;margin:-2px 0 12px">순장님은 두 칸 모두 본인 이름을 넣으세요. 처음 보는 순장 이름이면 순이 자동으로 만들어져요.</div>
+    <div class="ev-meta" style="margin-bottom:12px">처음 한 번만 입력하면 돼요.</div>
+    <div class="filter" style="padding:0 0 14px;display:grid;grid-template-columns:repeat(3,1fr)">${roleBtn("member","순원입니다")}${roleBtn("soon","순장입니다")}${roleBtn("darak","다락방장입니다")}</div>
+    ${fields}
     ${joinError?`<div style="color:var(--no);font-size:13px;margin-bottom:10px">${esc(joinError)}</div>`:""}
-    <button class="checkin" style="margin-top:0" data-act="joinSoon">시작하기</button>
+    <button class="checkin" style="margin-top:0" data-act="joinGo">시작하기</button>
     <button class="sbtn" style="width:100%;margin-top:8px;padding:13px 0;font-size:15px" data-act="joinLater">다음에 하기</button>
-    <button class="sbtn" style="width:100%;margin-top:6px;border:0;background:none;color:var(--sub)" data-act="joinMode">다락방장 로그인</button>
   `);
 }
-async function joinDarak(){
-  const name = clean(document.getElementById("j_name").value), pw = document.getElementById("j_pw").value;
-  joinError = "";
+async function joinGo(){
+  const name = clean(document.getElementById("j_name").value);
+  joinDraft = name; joinError = "";
   if (!name){ joinError = "이름을 입력해 주세요"; return maybeAskSoon(true); }
-  if (!CONFIG.DARAK_PASSWORD || pw !== CONFIG.DARAK_PASSWORD){ joinError = "비밀번호가 맞지 않아요"; return maybeAskSoon(true); }
-  await save("members", user.id, { name, role:"darak", soonId:null });
-  joinMode = "member"; closeModal(); toast("다락방장으로 등록했어요"); render();
-}
-async function joinSoon(){
-  const name = clean(document.getElementById("j_name").value), leader = clean(document.getElementById("j_leader").value);
-  joinError = "";
-  if (!name || !leader){ joinError = "내 이름과 순장 이름을 모두 입력해 주세요"; return maybeAskSoon(true); }
+  if (joinMode==="darak"){
+    const pw = document.getElementById("j_pw").value;
+    if (!CONFIG.DARAK_PASSWORD || pw !== CONFIG.DARAK_PASSWORD){ joinError = "비밀번호가 맞지 않아요"; return maybeAskSoon(true); }
+    await save("members", user.id, { name, role:"darak", soonId:null });
+    closeModal(); toast("다락방장으로 등록했어요"); return render();
+  }
+  if (joinMode==="soon"){
+    const pw = document.getElementById("j_pw").value;
+    if (!CONFIG.DARAK_PASSWORD || pw !== CONFIG.DARAK_PASSWORD){ joinError = "비밀번호가 맞지 않아요"; return maybeAskSoon(true); }
+  }
+  const leader = joinMode==="soon" ? name : clean(document.getElementById("j_leader").value);
+  if (!leader){ joinError = "순장 이름을 입력해 주세요"; return maybeAskSoon(true); }
   let soon = soonList().find(x=> clean(x.leaderName)===leader);
-  const meLeader = name===leader;
   let role = "member";
-  if (!soon){
-    // 순장이 아직 안 들어왔어도 순장 이름으로 순을 만들어 둠 (순장은 나중에 들어와서 자기 순을 맡음)
+  if (joinMode==="soon"){
+    if (soon && soon.leaderUid && soon.leaderUid!==user.id){ joinError = `'${leader} 순'에는 이미 순장이 등록되어 있어요. 이름을 확인해 주세요.`; return maybeAskSoon(true); }
+    if (!soon){
+      const sid = "soon_"+Date.now();
+      await save("soons", sid, { name:`${leader} 순`, leaderName:leader, leaderUid:user.id, order:soonList().length });
+      soon = { id:sid };
+    } else await save("soons", soon.id, { leaderUid:user.id });
+    role = "soon";
+  } else if (!soon){
     const sid = "soon_"+Date.now();
-    await save("soons", sid, { name:`${leader} 순`, leaderName:leader, leaderUid: meLeader ? user.id : null, order:soonList().length });
-    soon = { id:sid }; if (meLeader) role = "soon";
-  } else if (meLeader && (!soon.leaderUid || soon.leaderUid===user.id)){
-    await save("soons", soon.id, { leaderUid:user.id }); role = "soon";
+    await save("soons", sid, { name:`${leader} 순`, leaderName:leader, leaderUid:null, order:soonList().length });
+    soon = { id:sid };
   }
   await save("members", user.id, { name, soonId:soon.id, role });
-  closeModal(); toast(`${soonName(soon.id)}으로 등록했어요`); render();
+  closeModal(); toast(role==="soon" ? `${soonName(soon.id)} 순장으로 등록했어요` : `${soonName(soon.id)}으로 등록했어요`); render();
 }
 
 /* ---------- 화면 ---------- */
@@ -667,6 +680,7 @@ function viewSettings(){
         <div class="field"><label>시간</label><input id="s_time" type="time" value="${esc(s.time)}"></div>
       </div>
       <div class="field"><label>모임 이름</label><input id="s_title" value="${esc(s.title)}"></div>
+      <div class="field"><label>출석부 시작일 (이 날짜부터 모임이 만들어져요)</label><input id="s_start" type="date" value="${esc(s.startDate||"")}"></div>
       <button class="sbtn primary" data-act="saveSettings">저장</button>
     </div>
 
@@ -764,11 +778,10 @@ document.addEventListener("click", async ev=>{
       case "close": return closeModal();
       case "filter": soonFilter = id; return render();
       case "names": openNames.has(id)?openNames.delete(id):openNames.add(id); return render();
-      case "joinSoon": return joinSoon();
-      case "joinDarak": return joinDarak();
+      case "joinGo": return joinGo();
+      case "joinRole": { const n=document.getElementById("j_name"); if(n) joinDraft=n.value; joinMode=id; joinError=""; return maybeAskSoon(true); }
       case "joinLater": joinSkipped = true; sessionStorage.setItem("att_join_later","1"); closeModal(); return;
       case "openJoin": closeModal(); return maybeAskSoon(true);
-      case "joinMode": joinMode = joinMode==="member" ? "darak" : "member"; joinError = ""; return maybeAskSoon(true);
       case "rsvp": {
         const cur = resp(id,user.id).rsvp, v = b.dataset.v;
         await save("responses", rid(id,user.id), { eventId:id, uid:user.id, rsvp: cur===v ? null : v, updatedAt:Date.now() });
@@ -829,7 +842,7 @@ document.addEventListener("click", async ev=>{
         await remove("soons", id); if (soonFilter===id) soonFilter="all"; return render();
       }
       case "saveSettings": {
-        await save("config","settings",{ weekday:Number(document.getElementById("s_wd").value), time:document.getElementById("s_time").value, title:document.getElementById("s_title").value.trim()||"다락방 모임" });
+        await save("config","settings",{ weekday:Number(document.getElementById("s_wd").value), time:document.getElementById("s_time").value, title:document.getElementById("s_title").value.trim()||"다락방 모임", startDate:document.getElementById("s_start").value || CONFIG.START_DATE });
         toast("정기 모임 설정을 저장했어요"); return render();
       }
       case "addEvent": {
