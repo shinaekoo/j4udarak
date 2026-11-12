@@ -114,7 +114,7 @@
    ① 설정 — 여기만 채우면 됩니다
    ========================================================= */
 const CONFIG = {
-  GROUP_NAME: " J4U 순모임",
+  GROUP_NAME: "J4U 순모임",
   // 카카오 개발자센터 > 내 애플리케이션 > 앱 키 > "REST API 키"
   KAKAO_REST_KEY: "eaaf7e5dfc99217b7201ea326b81981f",
     KAKAO_CLIENT_SECRET: "wPJCeNvvjc2irl1QT6qeM1Gxwu0rL2At",
@@ -369,10 +369,15 @@ function login(){
     localStorage.setItem("att_demo2_user", JSON.stringify(user));
     afterLogin(); return;
   }
-  location.href = `https://kauth.kakao.com/oauth/authorize?client_id=${CONFIG.KAKAO_REST_KEY}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code`;
+  // 로그아웃한 뒤에는 카카오 로그인 화면을 다시 띄워서 다른 계정으로 들어갈 수 있게 함
+  const force = localStorage.getItem("att_force_login")==="1";
+  localStorage.removeItem("att_force_login");
+  location.href = `https://kauth.kakao.com/oauth/authorize?client_id=${CONFIG.KAKAO_REST_KEY}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code${force?"&prompt=login":""}`;
 }
 function logout(){
   localStorage.removeItem(DEMO ? "att_demo2_user" : "att_user");
+  localStorage.setItem("att_force_login","1");
+  sessionStorage.removeItem("att_join_later");
   user = null; closeModal(); render();
 }
 async function afterLogin(){
@@ -484,6 +489,7 @@ function render(){
           <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#191919" d="M12 3C6.48 3 2 6.48 2 10.77c0 2.77 1.86 5.2 4.66 6.57l-.95 3.48c-.08.3.26.54.52.37l4.15-2.74c.53.07 1.07.11 1.62.11 5.52 0 10-3.48 10-7.79S17.52 3 12 3z"/></svg>
           카카오로 시작하기
         </button>
+        ${localStorage.getItem("att_force_login")==="1" ? `<div class="ev-meta" style="margin-top:12px;font-size:13px">다른 카카오 계정으로 로그인할 수 있어요.</div>` : ""}
         ${DEMO ? `<div class="demo-note">지금은 <b>데모 모드</b>예요. 카카오·Firebase 키를 넣기 전이라 이 기기에만 저장돼요. 들어간 뒤 프로필 메뉴에서 다락방장·순장·멤버 화면을 바꿔 볼 수 있어요.</div>` : ""}
       </div>`;
     return;
@@ -777,7 +783,12 @@ function renderProfile(){
       </div>
     </div>`:""}
     ${(!isDarak() && !store.soons[mySoon()])?`<button class="sbtn primary" style="width:100%;padding:12px;margin-bottom:8px" data-act="openJoin">순 등록하기</button>`:""}
-    <button class="sbtn" style="width:100%;padding:12px;margin-bottom:8px" data-act="logout">로그아웃</button>
+    ${(!isDarak() && !isSoonjang() && store.soons[mySoon()])?`
+    <div class="card">
+      <div class="field"><label>순장이신가요? 리더 비밀번호를 넣으면 ${esc(soonName(mySoon()))}의 순장이 돼요</label><input id="p_pw" type="password" placeholder="리더 비밀번호"></div>
+      <button class="sbtn primary" data-act="becomeSoonjang">순장으로 전환</button>
+    </div>`:""}
+    <button class="sbtn" style="width:100%;padding:12px;margin-bottom:8px" data-act="logout">로그아웃 (다른 카카오 계정으로 로그인)</button>
     ${DEMO?`<button class="sbtn danger" style="width:100%;padding:12px" data-act="resetDemo">데모 데이터 초기화</button>`:""}`);
 }
 
@@ -802,6 +813,16 @@ document.addEventListener("click", async ev=>{
       case "joinRole": { const n=document.getElementById("j_name"); if(n) joinDraft=n.value; joinMode=id; joinError=""; return maybeAskSoon(true); }
       case "joinLater": joinSkipped = true; sessionStorage.setItem("att_join_later","1"); closeModal(); return;
       case "openJoin": closeModal(); return maybeAskSoon(true);
+      case "becomeSoonjang": {
+        const pw = document.getElementById("p_pw").value, sid = mySoon(), sn = store.soons[sid];
+        if (!CONFIG.DARAK_PASSWORD || pw !== CONFIG.DARAK_PASSWORD) return toast("비밀번호가 맞지 않아요");
+        if (sn.leaderUid && sn.leaderUid!==user.id && store.members[sn.leaderUid]) return toast("이 순에는 이미 순장이 등록되어 있어요");
+        const me = memberName(user.id);
+        if (clean(sn.leaderName) && clean(sn.leaderName)!==me && !confirm(`'${sn.name}'의 순장이 되면 순 이름이 '${me} 순'으로 바뀌어요. 계속할까요?`)) return;
+        await save("soons", sid, { leaderUid:user.id, leaderName:me, name:`${me} 순` });
+        await save("members", user.id, { role:"soon" });
+        closeModal(); toast(`${me} 순의 순장이 됐어요`); return render();
+      }
       case "rsvp": {
         const cur = resp(id,user.id).rsvp, v = b.dataset.v;
         await save("responses", rid(id,user.id), { eventId:id, uid:user.id, rsvp: cur===v ? null : v, updatedAt:Date.now() });
