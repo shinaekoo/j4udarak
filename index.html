@@ -95,7 +95,7 @@
   .sorter{display:flex;justify-content:space-between;align-items:center;margin:22px 4px 10px}
   .sorter h2{margin:0}
   .sortbtns{display:flex;background:#ebe8e1;border-radius:10px;padding:3px}
-  .sortbtns button{border:0;background:none;padding:6px 11px;border-radius:8px;font-size:13px;font-weight:700;color:var(--sub)}
+  .sortbtns button{border:0;background:none;padding:6px 9px;border-radius:8px;font-size:13px;font-weight:700;color:var(--sub)}
   .sortbtns button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
   .attcount{font-size:12px;font-weight:700;color:var(--yes);margin-left:6px;vertical-align:1px}
   a.btn{text-decoration:none;display:inline-flex;align-items:center}
@@ -108,8 +108,13 @@
   .mrow .top .name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .sbtn2{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 9px;font-weight:700;font-size:12px;color:var(--ink);text-decoration:none;display:inline-flex;align-items:center}
   .sbtn2.call{color:var(--yes)} .sbtn2.danger{color:var(--no)}
+  .sbtn2.icon{width:30px;height:29px;padding:0;justify-content:center}
+  .sbtn2.icon svg{width:16px;height:16px}
   .mrow .acts{display:flex;align-items:center;gap:4px;flex:none}
   .mrow .info{margin-top:4px}
+  .mrow .memo{display:flex;gap:8px;align-items:flex-start}
+  .mrow .memo span{flex:1}
+  .memo-x{border:0;background:none;color:var(--sub);font-size:15px;line-height:1;padding:0 2px;cursor:pointer}
   .divider{width:1px;align-self:stretch;background:var(--line);margin:4px 2px}
   .demo{font-size:12px;color:var(--sub);background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:14px;line-height:1.5}
 </style>
@@ -239,6 +244,14 @@ function memoBlock(m, tools){
   if (!m.memo) return tools ? `<div style="margin-top:6px"><button class="link" data-act="memoEdit" data-id="${m.id}">+ 메모 추가</button></div>` : "";
   return `<div class="memo">${esc(m.memo)}</div>` + (tools ? `<div style="margin-top:4px"><span class="memo-tools"><button class="link" data-act="memoEdit" data-id="${m.id}">메모 수정</button><button class="link danger" data-act="memoDelete" data-id="${m.id}">메모 삭제</button></span></div>` : "");
 }
+function memberLine(m, st){   // 순원 목록 두 번째 줄: 생일 · 출석
+  const parts = [];
+  if (m.bday){ const n = daysToBday(m.bday); parts.push(n<=7 ? `<span class="bday-soon">🎂 ${bdayFull(m)} · ${ddayText(n)}</span>` : `<span>🎂 ${bdayFull(m)}</span>`); }
+  if (st && st.t) parts.push(`<span class="attcount" style="margin:0">출석 ${st.n}/${st.t}</span>`);
+  return parts.length ? `<div class="info">${parts.join("")}</div>` : "";
+}
+const ICON_PHONE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>`;
+const ICON_SMS = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
 const upcomingBdays = ()=> members().filter(m=>m.bday).map(m=>({...m, dd:daysToBday(m.bday)})).filter(m=>m.dd<=7).sort((a,b)=>a.dd-b.dd);
 function birthdayToasts(){
   const key = "simple_bday_seen_" + today();
@@ -375,6 +388,10 @@ function attStat(mid, excludeId){
 function sortedMembers(excludeId){   // excludeId: 체크 중인 일정은 순서 계산에서 빼서, 누를 때마다 줄이 움직이지 않게 함
   const list = members(), st = {}; list.forEach(m=> st[m.id] = attStat(m.id, excludeId));
   if (memberSort==="att") list.sort((a,b)=> st[b.id].n - st[a.id].n || st[b.id].r - st[a.id].r || a.name.localeCompare(b.name,"ko"));
+  if (memberSort==="gender"){   // 여 → 남 → 미입력, 같은 성별 안에서는 가나다순
+    const g = m => m.gender==="f" ? 0 : m.gender==="m" ? 1 : 2;
+    list.sort((a,b)=> g(a)-g(b) || a.name.localeCompare(b.name,"ko"));
+  }
   if (memberSort==="age"){   // 나이 많은 순. 출생연도·생일 모르는 사람은 맨 뒤
     const key = m => m.byear && m.bday ? m.byear + m.bday : "9999";
     list.sort((a,b)=> key(a).localeCompare(key(b)) || a.name.localeCompare(b.name,"ko"));
@@ -385,6 +402,7 @@ const sortToggle = ()=> `<div class="sortbtns">
         <button class="${memberSort==="name"?"on":""}" data-act="sortMembers" data-v="name">ㄱㄴㄷ순</button>
         <button class="${memberSort==="att"?"on":""}" data-act="sortMembers" data-v="att">출석순</button>
         <button class="${memberSort==="age"?"on":""}" data-act="sortMembers" data-v="age">연령순</button>
+        <button class="${memberSort==="gender"?"on":""}" data-act="sortMembers" data-v="gender">성별순</button>
       </div>`;
 function viewMembers(){
   const { list, st } = sortedMembers();
@@ -420,14 +438,16 @@ function viewMembers(){
       </div>` : `
       <div class="mrow">
         <div class="top">
-          <div class="name">${nameTag(m)}${st[m.id].t?`<span class="attcount">출석 ${st[m.id].n}/${st[m.id].t}</span>`:""}</div>
+          <div class="name">${nameTag(m)}</div>
           <div class="acts">
-            ${m.phone ? `<a class="sbtn2 call" href="tel:${telDigits(m.phone)}">전화</a><a class="sbtn2 call" href="sms:${telDigits(m.phone)}">문자</a><span class="divider" aria-hidden="true"></span>` : ""}
+            ${m.phone ? `<a class="sbtn2 call icon" href="tel:${telDigits(m.phone)}" aria-label="전화 걸기" title="전화">${ICON_PHONE}</a><a class="sbtn2 call icon" href="sms:${telDigits(m.phone)}" aria-label="문자 보내기" title="문자">${ICON_SMS}</a><span class="divider" aria-hidden="true"></span>` : ""}
+            <button class="sbtn2" data-act="memoEdit" data-id="${m.id}">${m.memo?"메모":"+메모"}</button>
             <button class="sbtn2" data-act="editMember" data-id="${m.id}">수정</button>
             <button class="sbtn2 danger" data-act="deleteMember" data-id="${m.id}">삭제</button>
           </div>
         </div>
-        ${memberInfo(m,{phone:false})}${memoBlock(m,true)}
+        ${memberLine(m, st[m.id])}
+        ${m.memo ? `<div class="memo"><span>${esc(m.memo)}</span><button class="memo-x" data-act="memoDelete" data-id="${m.id}" aria-label="메모 삭제">×</button></div>` : ""}
       </div>`).join("") || `<div class="empty">아직 순원이 없어요.</div>`}</div>`;
 }
 
