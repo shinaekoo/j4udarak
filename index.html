@@ -244,6 +244,7 @@ const events = ()=> Object.entries(store.events).map(([id,e])=>({id,...e,marks:e
 const count = (e,v)=> members().filter(m=>e.marks[m.id]===v).length;
 
 /* ---------- 화면 ---------- */
+let checkFilter = "all";   // 일정 출석체크 화면: all | o(출석자) | x(결석자)
 const reasonOpen = new Set();   // 사유 입력칸을 열어 둔 순원
 let tab = "events", openEvent = null, showForm = false, editingMember = null, editingEvent = false;
 const $app = document.getElementById("app");
@@ -305,7 +306,9 @@ function viewEvents(){
 
 function viewCheck(){
   const e = { id:openEvent, ...store.events[openEvent], marks: store.events[openEvent].marks || {} };
-  const { list, st } = sortedMembers(openEvent), o = count(e,"o"), x = count(e,"x");
+  const all = members(), o = count(e,"o"), x = count(e,"x");
+  const list = checkFilter==="o" ? all.filter(m=>e.marks[m.id]==="o") : checkFilter==="x" ? all.filter(m=>e.marks[m.id]==="x") : all;
+  const fbtn = (v,l,n)=> `<button class="${checkFilter===v?"on":""}" data-act="checkFilter" data-v="${v}">${l} ${n}</button>`;
   return `
     <button class="back" data-act="back">‹ 일정 목록</button>
     ${editingEvent ? eventForm(e) : `
@@ -316,17 +319,17 @@ function viewCheck(){
     <div class="summary">
       <div class="stat yes"><div class="n">${o}</div><div class="l">출석</div></div>
       <div class="stat no"><div class="n">${x}</div><div class="l">결석</div></div>
-      <div class="stat"><div class="n">${list.length-o-x}</div><div class="l">미체크</div></div>
+      <div class="stat"><div class="n">${all.length-o-x}</div><div class="l">미체크</div></div>
     </div>
-    <div class="sorter"><h2>출석체크</h2>${list.length?sortToggle():""}</div>
-    ${list.length ? `
+    <div class="sorter"><h2>출석체크</h2>${all.length?`<div class="sortbtns">${fbtn("all","전체",all.length)}${fbtn("o","출석",o)}${fbtn("x","결석",x)}</div>`:""}</div>
+    ${all.length ? `
     <div class="tools">
       <button class="btn" data-act="restAbsent">남은 사람 모두 결석</button>
       <button class="btn" data-act="copy">카톡용 복사</button>
     </div>
-    <div class="card">${list.map(m=>{ const absent = e.marks[m.id]==="x", reason = (e.reasons||{})[m.id]||""; return `
+    <div class="card">${list.length ? "" : `<div class="empty">${checkFilter==="o"?"아직 출석한 사람이 없어요.":"결석한 사람이 없어요."}</div>`}${list.map(m=>{ const absent = e.marks[m.id]==="x", reason = (e.reasons||{})[m.id]||""; return `
       <div class="row ${absent?"has-reason":""}">
-        <div><div class="name">${nameTag(m)}${memberSort==="att"&&st[m.id].t?`<span class="attcount">출석 ${st[m.id].n}/${st[m.id].t}</span>`:""}</div>${memberInfo(m)}${memoBlock(m,false)}</div>
+        <div><div class="name">${nameTag(m)}</div>${memberInfo(m)}${memoBlock(m,false)}</div>
         <div class="marks">
           <button class="mk yes ${e.marks[m.id]==="o"?"on":""}" data-act="mark" data-id="${m.id}" data-v="o">출석</button>
           <button class="mk no ${absent?"on":""}" data-act="mark" data-id="${m.id}" data-v="x">결석</button>
@@ -463,11 +466,12 @@ document.addEventListener("click", async ev=>{
       case "closeForm": showForm=false; return render();
       case "createEvent": {
         const data = readEventForm(); if (!data) return;
-        const eid = newId("e_"); showForm=false; openEvent=eid;
+        const eid = newId("e_"); showForm=false; openEvent=eid; checkFilter="all";
         await put("simple_events","events", eid, { ...data, marks:{}, createdAt:Date.now() });
         window.scrollTo(0,0); return toast("일정을 만들었어요");
       }
-      case "open": openEvent=id; tab="events"; editingEvent=false; render(); return window.scrollTo(0,0);
+      case "checkFilter": checkFilter=v; return render();
+      case "open": checkFilter="all"; openEvent=id; tab="events"; editingEvent=false; render(); return window.scrollTo(0,0);
       case "back": openEvent=null; editingEvent=false; reasonOpen.clear(); return render();
       case "editEvent": editingEvent=true; return render();
       case "cancelEditEvent": editingEvent=false; return render();
