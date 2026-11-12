@@ -107,6 +107,9 @@
   .gdot.f{background:#ec6fa0} .gdot.m{background:#4a7fd6}
   .mrow{padding:11px 0;border-bottom:1px solid var(--line)}
   .mrow:last-child{border-bottom:0}
+  .namelink{border:0;background:none;padding:0;text-align:left;color:var(--ink);cursor:pointer}
+  .mrow.flash{animation:flash 1.6s ease}
+  @keyframes flash{0%,40%{background:#fff3c4}100%{background:transparent}}
   .mrow .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .mrow .top .name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .sbtn2{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 9px;font-weight:700;font-size:12px;color:var(--ink);text-decoration:none;display:inline-flex;align-items:center}
@@ -375,7 +378,7 @@ function viewCheck(){
     </div>
     <div class="card">${list.length ? "" : `<div class="empty">${checkFilter==="o"?"아직 출석한 사람이 없어요.":"결석한 사람이 없어요."}</div>`}${list.map(m=>{ const absent = e.marks[m.id]==="x", reason = (e.reasons||{})[m.id]||"", open = absent && reasonOpen.has(m.id); return `
       <div class="row ${open?"has-reason":""}">
-        <div style="min-width:0"><div class="name">${nameTag(m)}</div>${memberInfo(m,{phone:false})}${memoBlock(m,false)}${absent && reason && !open ? `<div class="reason-inline">사유: ${esc(reason)}</div>` : ""}</div>
+        <div style="min-width:0"><button class="name namelink" data-act="gotoMember" data-id="${m.id}">${nameTag(m)}</button>${absent && reason && !open ? `<div class="reason-inline">사유: ${esc(reason)}</div>` : ""}</div>
         <div class="marks">
           ${absent ? `<button class="mk reason-mk ${reason?"has":""}" data-act="reasonOpen" data-id="${m.id}">${reason?"사유":"+사유"}</button>` : ""}
           <button class="mk yes ${e.marks[m.id]==="o"?"on":""}" data-act="mark" data-id="${m.id}" data-v="o">출석</button>
@@ -450,7 +453,7 @@ function viewMembers(){
           <button class="btn primary" style="flex:2" data-act="saveMember" data-id="${m.id}">저장</button>
         </div>
       </div>` : `
-      <div class="mrow">
+      <div class="mrow" id="mem-${m.id}">
         <div class="top">
           <div class="who">
             <div class="name">${nameTag(m)}</div>
@@ -574,6 +577,12 @@ document.addEventListener("click", async ev=>{
         editingMember=null; await put("simple_members","members", id, { name, bday, byear, phone, gender, memo }); return toast("저장했어요");
       }
       case "cancelMember": editingMember=null; return render();
+      case "gotoMember": {
+        tab="members"; editingMember=null; render();
+        const el = document.getElementById("mem-"+id);
+        if (el){ el.scrollIntoView({ block:"center", behavior:"smooth" }); el.classList.add("flash"); }
+        return;
+      }
       case "sortMembers": memberSort=v; localStorage.setItem("simple_member_sort", v); return render();
       case "reasonOpen": { reasonOpen.add(id); render(); const i=document.querySelector(`[data-reason="${id}"]`); if (i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length); } return; }
       case "pickGender": { const g=document.getElementById("eGender"); const nv = g.dataset.v===v ? "" : v;   // 같은 버튼을 다시 누르면 선택 해제
