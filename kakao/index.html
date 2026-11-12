@@ -184,6 +184,8 @@ const CONFIG = {
   KAKAO_CLIENT_SECRET: "",
   // 순장 비밀번호: 처음 로그인할 때 '순장입니다'를 고르고 이 비밀번호를 넣으면 순장이 돼요
   LEADER_PASSWORD: "123454321",
+  // 교역자 비밀번호: 처음 로그인할 때 '교역자입니다'를 고르고 이 비밀번호를 넣으면 교역자로 들어가요 (순장과 같은 화면)
+  PASTOR_PASSWORD: "13579",
   FIREBASE: {
     apiKey: "AIzaSyAmv1pHlLahYythXiT15cGqlEnHJEtg9e0",
     authDomain: "darak-attendance.firebaseapp.com",
@@ -332,7 +334,8 @@ function birthdayToasts(){
 
 /* ---------- 카카오 로그인 · 역할 ---------- */
 let user = null;   // { id, nickname }
-const isLeader = ()=> !!(user && store.leaders[user.id]);
+const isLeader = ()=> !!(user && store.leaders[user.id]);   // 순장·교역자 모두
+const roleName = uid => (store.leaders[uid] && store.leaders[uid].role === "pastor") ? "교역자" : "순장";
 const myMember = ()=> user ? members().find(m=>m.kakaoId===user.id) : null;
 async function initAuth(){
   const code = new URLSearchParams(location.search).get("code");
@@ -377,7 +380,7 @@ function render(){
     $app.innerHTML = `
       <div class="lock">
         <h1>${esc(CONFIG.GROUP_NAME)}</h1>
-        <p>카카오로 로그인하고<br>모임 참석을 미리 알려 주세요</p>
+        <p>순장·교역자 전용 출석체크예요<br>카카오로 로그인해 주세요</p>
         ${DEMO ? `
           <button class="kakao" data-act="login" data-v="demo_leader">데모: 순장으로 들어가기</button>
           <button class="kakao" style="margin-top:8px;background:#fff;border:1px solid var(--line)" data-act="login" data-v="demo_member">데모: 순원(박서연)으로 들어가기</button>
@@ -393,14 +396,14 @@ function render(){
   const tabs = leader ? [["events","일정"],["members","순원"],["stats","기록"]] : [["mEvents","일정"],["mStats","내 기록"],["mInfo","내 정보"]];
   if (!tabs.some(t=>t[0]===tab)) tab = tabs[0][0];
   document.getElementById("tabs").innerHTML = tabs.map(([v,l])=>`<button class="tab ${tab===v?"on":""}" data-tab="${v}">${l}</button>`).join("");
-  document.getElementById("subtitle").textContent = (DEMO ? "데모 · " : "") + (leader ? `순장 · 순원 ${members().length}명` : `${me.name}님`);
-  document.getElementById("whoami").textContent = leader ? (store.leaders[user.id].name || "순장") : me.name;
+  document.getElementById("subtitle").textContent = (DEMO ? "데모 · " : "") + (leader ? `${roleName(user.id)} · 순원 ${members().length}명` : `${me.name}님`);
+  document.getElementById("whoami").textContent = leader ? (store.leaders[user.id].name || roleName(user.id)) : me.name;
   const views = { events: ()=> openEvent && store.events[openEvent] ? viewCheck() : viewEvents(), members:viewMembers, stats:viewStats, mEvents:viewMyEvents, mStats:viewMyStats, mInfo:viewMyInfo };
   $app.innerHTML = views[tab]();
 }
 
 /* ---------- 처음 로그인: 순원/순장 고르기 ---------- */
-let onboardRole = "member", onboardErr = "", newName = false;
+let onboardRole = "leader", onboardErr = "", newName = false;
 function onboard(){
   const unlinked = members().filter(m=>!m.kakaoId);
   const body = onboardRole==="member" ? (newName || !unlinked.length ? `
@@ -412,13 +415,13 @@ function onboard(){
       <button class="btn" style="width:100%;margin-top:4px" data-act="obNewMode">명단에 내 이름이 없어요</button>`)
     : `
       <div class="field"><label>이름</label><input id="ob_name" maxlength="12" placeholder="예: 김하늘" value="${esc(user.nickname||"")}"></div>
-      <div class="field"><label>순장 비밀번호</label><input id="ob_pw" type="password"></div>
-      <button class="big" style="margin-top:4px" data-act="obLeader">순장으로 시작하기</button>`;
+      <div class="field"><label>${onboardRole==="pastor"?"교역자":"순장"} 비밀번호</label><input id="ob_pw" type="password"></div>
+      <button class="big" style="margin-top:4px" data-act="obLeader">${onboardRole==="pastor"?"교역자":"순장"}로 시작하기</button>`;
   openModal(`
     <div data-onboard>
       <h3>반가워요! 👋</h3>
       <div class="sub">처음 한 번만 하면 돼요.</div>
-      <div class="rolepick"><button class="${onboardRole==="member"?"on":""}" data-act="obRole" data-v="member">순원입니다</button><button class="${onboardRole==="leader"?"on":""}" data-act="obRole" data-v="leader">순장입니다</button></div>
+      <div class="rolepick"><button class="${onboardRole==="leader"?"on":""}" data-act="obRole" data-v="leader">순장입니다</button><button class="${onboardRole==="pastor"?"on":""}" data-act="obRole" data-v="pastor">교역자입니다</button></div>
       ${body}
       ${onboardErr?`<div style="color:var(--no);font-size:13px;margin-top:10px">${esc(onboardErr)}</div>`:""}
       <button class="btn" style="width:100%;margin-top:14px;border:0;background:none;color:var(--sub)" data-act="logout">다른 계정으로 로그인</button>
@@ -627,10 +630,10 @@ function viewMyInfo(){
 }
 function renderProfile(){
   openModal(`
-    <h3>${esc(store.leaders[user.id]?.name || "순장")}</h3>
-    <div class="sub" style="margin-bottom:16px">순장 · ${esc(CONFIG.GROUP_NAME)}</div>
+    <h3>${esc(store.leaders[user.id]?.name || roleName(user.id))}</h3>
+    <div class="sub" style="margin-bottom:16px">${roleName(user.id)} · ${esc(CONFIG.GROUP_NAME)}</div>
     <button class="btn" style="width:100%;padding:12px;margin-bottom:8px" data-act="logout">로그아웃 (다른 카카오 계정으로 로그인)</button>
-    <button class="btn danger" style="width:100%;padding:12px;border:0;background:none" data-act="leaveLeader">순장 권한 내려놓기</button>
+    <button class="btn danger" style="width:100%;padding:12px;border:0;background:none" data-act="leaveLeader">${roleName(user.id)} 권한 내려놓기</button>
     ${DEMO?`<button class="btn danger" style="width:100%;padding:12px;margin-top:8px" data-act="resetDemo">데모 데이터 초기화</button>`:""}`);
 }
 
@@ -684,10 +687,11 @@ document.addEventListener("click", async ev=>{
       case "obLeader": {
         const n = clean(document.getElementById("ob_name").value), pw = document.getElementById("ob_pw").value;
         if (!n){ onboardErr="이름을 입력해 주세요"; return onboard(); }
-        if (!CONFIG.LEADER_PASSWORD || pw !== CONFIG.LEADER_PASSWORD){ onboardErr="비밀번호가 맞지 않아요"; return onboard(); }
-        await put("leaders", user.id, { name:n }); closeModal(); toast("순장으로 시작해요"); render(); return birthdayToasts();
+        const pastor = onboardRole==="pastor", need = pastor ? CONFIG.PASTOR_PASSWORD : CONFIG.LEADER_PASSWORD;
+        if (!need || pw !== need){ onboardErr="비밀번호가 맞지 않아요"; return onboard(); }
+        await put("leaders", user.id, { name:n, role: pastor ? "pastor" : "leader" }); closeModal(); toast(pastor ? "교역자로 시작해요" : "순장으로 시작해요"); render(); return birthdayToasts();
       }
-      case "leaveLeader": { if (!confirm("순장 권한을 내려놓을까요? 다시 하려면 순장 비밀번호가 필요해요.")) return; closeModal(); return drop("leaders", user.id); }
+      case "leaveLeader": { if (!confirm(`${roleName(user.id)} 권한을 내려놓을까요? 다시 하려면 비밀번호가 필요해요.`)) return; closeModal(); return drop("leaders", user.id); }
       case "resetDemo": localStorage.removeItem("v2_demo"); localStorage.removeItem("v2_demo_user"); location.reload(); return;
       // 순장: 일정
       case "newEvent": showForm=true; return render();
