@@ -164,7 +164,7 @@
 </head>
 <body>
 <header id="hdr" style="display:none">
-  <div class="hbar hrow"><div>J4U 순모임 출석체크<small id="subtitle"></small></div><button class="whoami" id="whoami" data-act="profile"></button></div>
+  <div class="hbar hrow"><div><span id="apptitle">출석체크</span><small id="subtitle"></small></div><button class="whoami" id="whoami" data-act="profile"></button></div>
   <div class="tabs" id="tabs"></div>
 </header>
 <div class="wrap" id="app"><div class="loading">불러오는 중…</div></div>
@@ -396,6 +396,7 @@ function render(){
   const tabs = leader ? [["events","일정"],["members","순원"],["stats","기록"]] : [["mEvents","일정"],["mStats","내 기록"],["mInfo","내 정보"]];
   if (!tabs.some(t=>t[0]===tab)) tab = tabs[0][0];
   document.getElementById("tabs").innerHTML = tabs.map(([v,l])=>`<button class="tab ${tab===v?"on":""}" data-tab="${v}">${l}</button>`).join("");
+  document.getElementById("apptitle").textContent = CONFIG.GROUP_NAME + " 출석체크";
   document.getElementById("subtitle").textContent = (DEMO ? "데모 · " : "") + (leader ? `${roleName(user.id)} · 순원 ${members().length}명` : `${me.name}님`);
   document.getElementById("whoami").textContent = leader ? (store.leaders[user.id].name || roleName(user.id)) : me.name;
   const views = { events: ()=> openEvent && store.events[openEvent] ? viewCheck() : viewEvents(), members:viewMembers, stats:viewStats, mEvents:viewMyEvents, mStats:viewMyStats, mInfo:viewMyInfo };
