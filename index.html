@@ -115,7 +115,19 @@
   .sbtn2.icon svg{width:16px;height:16px}
   .mrow .acts{display:flex;align-items:center;gap:4px;flex:none}
   .mrow .who{display:flex;align-items:center;gap:4px;min-width:0}
-  .mrow .who .name{margin-right:4px}
+  .mrow .who .name{margin-right:2px}
+  .mrow .who .attcount{margin:0 2px 0 0;white-space:nowrap}
+  .mrow .who .divider{height:18px;align-self:center;margin:0 3px}
+  .mrow .acts .sbtn2{padding:5px 6px}
+  .mrow .acts{gap:3px}
+  .mrow .who{gap:3px}
+  .mrow .sbtn2.icon{width:26px;height:26px;flex:none}
+  .mrow .sbtn2.icon svg{width:14px;height:14px}
+  .mrow .top .name{flex:none;overflow:visible}          /* 이름은 절대 잘리지 않게 */
+  .mrow .who .attcount{font-size:11px;min-width:0;overflow:hidden;text-overflow:clip}
+  .mrow .who{overflow:hidden;flex:1 1 auto}
+  .mrow .who .divider{flex:none}
+  @media (max-width:380px){ .wrap{padding:0 10px 80px} .card{padding:4px 12px} }
   .mrow .info{margin-top:4px}
   .mrow .memo{display:flex;gap:8px;align-items:flex-start}
   .mrow .memo span{flex:1}
@@ -442,15 +454,16 @@ function viewMembers(){
         <div class="top">
           <div class="who">
             <div class="name">${nameTag(m)}</div>
-            ${m.phone ? `<a class="sbtn2 call icon" href="tel:${telDigits(m.phone)}" aria-label="전화 걸기" title="전화">${ICON_PHONE}</a><a class="sbtn2 call icon" href="sms:${telDigits(m.phone)}" aria-label="문자 보내기" title="문자">${ICON_SMS}</a>` : ""}
+            ${st[m.id].t ? `<span class="attcount">출석 ${st[m.id].n}/${st[m.id].t}</span>` : ""}
+            ${m.phone ? `<span class="divider" aria-hidden="true"></span><a class="sbtn2 call icon" href="tel:${telDigits(m.phone)}" aria-label="전화 걸기" title="전화">${ICON_PHONE}</a><a class="sbtn2 call icon" href="sms:${telDigits(m.phone)}" aria-label="문자 보내기" title="문자">${ICON_SMS}</a>` : ""}
           </div>
           <div class="acts">
-            <button class="sbtn2" data-act="memoEdit" data-id="${m.id}">${m.memo?"메모":"+메모"}</button>
+            <button class="sbtn2" data-act="memoEdit" data-id="${m.id}">메모</button>
             <button class="sbtn2" data-act="editMember" data-id="${m.id}">수정</button>
             <button class="sbtn2 danger" data-act="deleteMember" data-id="${m.id}">삭제</button>
           </div>
         </div>
-        ${memberLine(m, st[m.id])}
+        ${memberLine(m)}
         ${m.memo ? `<div class="memo"><span>${esc(m.memo)}</span><button class="memo-x" data-act="memoDelete" data-id="${m.id}" aria-label="메모 삭제">×</button></div>` : ""}
       </div>`).join("") || `<div class="empty">아직 순원이 없어요.</div>`}</div>`;
 }
