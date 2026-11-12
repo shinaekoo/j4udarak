@@ -533,7 +533,6 @@ function viewMembers(){
   const { list, st } = sortedMembers();
   return `
     <div class="add edit-only"><input id="addName" placeholder="이름 (쉼표로 여러 명: 홍길동, 김하늘)" maxlength="60"><button class="btn primary" data-act="addMember">추가</button></div>
-    <div class="sub edit-only" style="margin:0 4px">순원이 카카오로 로그인해서 자기 이름을 고르면 <span class="linked">카톡</span> 표시가 붙어요.</div>
     <div class="sorter"><h2>순원 ${list.length}명</h2>${sortToggle()}</div>
     <div class="card">${list.map(m=> editingMember===m.id ? `
       <div style="padding:12px 0;border-bottom:1px solid var(--line)">
