@@ -160,12 +160,14 @@ async function initData(onChange){
   const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
   const fs = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
   db = { fs, ref: fs.getFirestore(initializeApp(CONFIG.FIREBASE)) };
-  ["members","responses","events","soons","notices"].forEach(col=>{
+  // 처음 데이터가 다 들어올 때까지 기다림 (기존 가입자를 신규로 착각하지 않도록)
+  const firsts = ["members","responses","events","soons","notices"].map(col=> new Promise(res=>{
     fs.onSnapshot(fs.collection(db.ref, col), snap=>{
-      const m = {}; snap.forEach(d=>m[d.id]=d.data()); store[col]=m; onChange();
-    });
-  });
-  fs.onSnapshot(fs.doc(db.ref,"config","settings"), d=>{ store.settings = d.exists()? d.data() : null; onChange(); });
+      const m = {}; snap.forEach(d=>m[d.id]=d.data()); store[col]=m; res(); onChange();
+    }, err=>{ console.error(err); res(); });
+  }));
+  firsts.push(new Promise(res=> fs.onSnapshot(fs.doc(db.ref,"config","settings"), d=>{ store.settings = d.exists()? d.data() : null; res(); onChange(); }, err=>{ console.error(err); res(); })));
+  await Promise.all(firsts);
 }
 async function save(col, id, data){
   if (col==="config"){ store.settings = {...(store.settings||{}), ...data}; }
@@ -382,7 +384,7 @@ function logout(){
 }
 async function afterLogin(){
   const m = store.members[user.id];
-  if (!m) await save("members", user.id, { nickname:user.nickname, name:user.nickname, image:user.image, role:"member", joinedAt:Date.now() });
+  if (!m) await save("members", user.id, { nickname:user.nickname, name:user.nickname, image:user.image, joinedAt:Date.now() });
   else if (m.image !== user.image || m.nickname !== user.nickname) await save("members", user.id, { nickname:user.nickname, image:user.image });
   render();
   maybeAskSoon();
