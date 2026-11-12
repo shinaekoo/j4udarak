@@ -84,6 +84,10 @@
   .seg button{flex:1;border:1px solid var(--line);background:#fbfaf7;border-radius:10px;padding:10px 0;font-weight:700;color:var(--sub)}
   .seg button.on{background:var(--ink);border-color:var(--ink);color:#fff}
   textarea.memo-in{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fbfaf7;font:inherit;resize:vertical;min-height:70px;width:100%}
+  .reason-row{padding:0 0 12px;margin-top:-4px;border-bottom:1px solid var(--line)}
+  .reason-row input{width:100%;border:1px solid #efd3cf;background:var(--no-soft);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--ink)}
+  .reason-row input::placeholder{color:#b98a84}
+  .row.has-reason{border-bottom:0}
   .demo{font-size:12px;color:var(--sub);background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:14px;line-height:1.5}
 </style>
 </head>
@@ -134,7 +138,7 @@ async function initData(){
   fs = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
   db = fs.getFirestore(initializeApp(CONFIG.FIREBASE));
   const first = (col, key) => new Promise(res => fs.onSnapshot(fs.collection(db, col), snap => {
-    const m = {}; snap.forEach(d => m[d.id] = d.data()); store[key] = m; res(); if (ready) render();
+    const m = {}; snap.forEach(d => m[d.id] = d.data()); store[key] = m; res(); if (ready && !(document.activeElement && document.activeElement.dataset && document.activeElement.dataset.reason)) render();   // 결석 이유 입력 중에는 화면을 다시 그리지 않음
   }, err => { console.error(err); toast("데이터를 불러오지 못했어요"); res(); }));
   await Promise.all([first("simple_members","members"), first("simple_events","events")]);
 }
@@ -152,6 +156,13 @@ async function setMark(eid, mid, val, quiet){
   if (val) e.marks[mid] = val; else delete e.marks[mid];
   persist(); if (!quiet) render();
   if (!DEMO) await fs.setDoc(fs.doc(db,"simple_events",eid), { marks:{ [mid]: val || fs.deleteField() } }, { merge:true });
+}
+
+async function setReason(eid, mid, text){
+  const e = store.events[eid]; e.reasons = e.reasons || {};
+  if (text) e.reasons[mid] = text; else delete e.reasons[mid];
+  persist();
+  if (!DEMO) await fs.setDoc(fs.doc(db,"simple_events",eid), { reasons:{ [mid]: text || fs.deleteField() } }, { merge:true });
 }
 
 /* ---------- 도우미 ---------- */
@@ -302,14 +313,15 @@ function viewCheck(){
       <button class="btn" data-act="restAbsent">남은 사람 모두 결석</button>
       <button class="btn" data-act="copy">카톡용 복사</button>
     </div>
-    <div class="card">${list.map(m=>`
-      <div class="row">
+    <div class="card">${list.map(m=>{ const absent = e.marks[m.id]==="x", reason = (e.reasons||{})[m.id]||""; return `
+      <div class="row ${absent?"has-reason":""}">
         <div><div class="name">${nameTag(m)}</div>${memberInfo(m)}${memoBlock(m,false)}</div>
         <div class="marks">
           <button class="mk yes ${e.marks[m.id]==="o"?"on":""}" data-act="mark" data-id="${m.id}" data-v="o">출석</button>
-          <button class="mk no ${e.marks[m.id]==="x"?"on":""}" data-act="mark" data-id="${m.id}" data-v="x">결석</button>
+          <button class="mk no ${absent?"on":""}" data-act="mark" data-id="${m.id}" data-v="x">결석</button>
         </div>
-      </div>`).join("")}</div>` : `<div class="card"><div class="empty">순원이 없어요. 아래에서 바로 추가할 수 있어요.</div></div>`}
+      </div>
+      ${absent?`<div class="reason-row"><input data-reason="${m.id}" value="${esc(reason)}" maxlength="60" placeholder="결석 이유 (예: 출장, 아파서)" enterkeyhint="done"></div>`:""}`; }).join("")}</div>` : `<div class="card"><div class="empty">순원이 없어요. 아래에서 바로 추가할 수 있어요.</div></div>`}
     <div class="add">
       <input id="addName" placeholder="순원 추가 (쉼표로 여러 명)" maxlength="60">
       <button class="btn primary" data-act="addMember">추가</button>
@@ -430,7 +442,13 @@ document.addEventListener("click", async ev=>{
         if (!confirm("이 일정과 출석 기록을 삭제할까요?")) return;
         const eid = openEvent; openEvent=null; editingEvent=false; await drop("simple_events","events", eid); return toast("삭제했어요");
       }
-      case "mark": { const cur = (store.events[openEvent].marks||{})[id]; return setMark(openEvent, id, cur===v ? null : v); }
+      case "mark": {
+        const cur = (store.events[openEvent].marks||{})[id], next = cur===v ? null : v;
+        if (next!=="x" && (store.events[openEvent].reasons||{})[id]) await setReason(openEvent, id, "");
+        await setMark(openEvent, id, next);
+        if (next==="x") document.querySelector(`[data-reason="${id}"]`)?.focus();
+        return;
+      }
       case "restAbsent": {
         const marks = store.events[openEvent].marks || {}, rest = members().filter(m=>!marks[m.id]);
         if (!rest.length) return toast("남은 사람이 없어요");
@@ -439,7 +457,8 @@ document.addEventListener("click", async ev=>{
       }
       case "copy": {
         const e = store.events[openEvent], marks = e.marks || {}, list = members();
-        const yes = list.filter(m=>marks[m.id]==="o").map(m=>m.name), no = list.filter(m=>marks[m.id]==="x").map(m=>m.name);
+        const rs = e.reasons || {};
+        const yes = list.filter(m=>marks[m.id]==="o").map(m=>m.name), no = list.filter(m=>marks[m.id]==="x").map(m=> rs[m.id] ? `${m.name}(${rs[m.id]})` : m.name);
         const text = `[${CONFIG.GROUP_NAME}] ${dLabel(e.date)} ${e.title}\n출석 ${yes.length}명: ${yes.join(", ")||"-"}\n결석 ${no.length}명: ${no.join(", ")||"-"}`;
         if (navigator.share){ try{ await navigator.share({ text }); return; }catch(_){ } }
         await navigator.clipboard.writeText(text); return toast("복사했어요. 단톡방에 붙여넣으세요");
@@ -477,8 +496,15 @@ document.addEventListener("click", async ev=>{
     }
   }catch(e){ console.error(e); toast("저장 중 오류가 났어요"); }
 });
+document.addEventListener("change", async e=>{
+  const mid = e.target.dataset && e.target.dataset.reason;
+  if (!mid || !openEvent) return;
+  try { await setReason(openEvent, mid, clean(e.target.value)); toast(e.target.value.trim() ? "결석 이유를 저장했어요" : "결석 이유를 지웠어요"); }
+  catch(err){ console.error(err); toast("저장 중 오류가 났어요"); }
+});
 document.addEventListener("keydown", e=>{
   if (e.key!=="Enter") return;
+  if (e.target.dataset && e.target.dataset.reason){ e.target.blur(); return; }
   if (e.target.id==="addName") addMembers();
   if (["eName","eBday","ePhone"].includes(e.target.id)) document.querySelector('[data-act="saveMember"]')?.click();
   if (e.target.id==="pass") document.querySelector('[data-act="unlock"]')?.click();
