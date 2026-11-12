@@ -362,11 +362,16 @@ function attStat(mid, excludeId){
 function sortedMembers(excludeId){   // excludeId: 체크 중인 일정은 순서 계산에서 빼서, 누를 때마다 줄이 움직이지 않게 함
   const list = members(), st = {}; list.forEach(m=> st[m.id] = attStat(m.id, excludeId));
   if (memberSort==="att") list.sort((a,b)=> st[b.id].n - st[a.id].n || st[b.id].r - st[a.id].r || a.name.localeCompare(b.name,"ko"));
+  if (memberSort==="age"){   // 나이 많은 순. 출생연도·생일 모르는 사람은 맨 뒤
+    const key = m => m.byear && m.bday ? m.byear + m.bday : "9999";
+    list.sort((a,b)=> key(a).localeCompare(key(b)) || a.name.localeCompare(b.name,"ko"));
+  }
   return { list, st };
 }
 const sortToggle = ()=> `<div class="sortbtns">
         <button class="${memberSort==="name"?"on":""}" data-act="sortMembers" data-v="name">ㄱㄴㄷ순</button>
         <button class="${memberSort==="att"?"on":""}" data-act="sortMembers" data-v="att">출석순</button>
+        <button class="${memberSort==="age"?"on":""}" data-act="sortMembers" data-v="age">연령순</button>
       </div>`;
 function viewMembers(){
   const { list, st } = sortedMembers();
