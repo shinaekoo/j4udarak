@@ -111,6 +111,8 @@
   .sbtn2.icon{width:30px;height:29px;padding:0;justify-content:center}
   .sbtn2.icon svg{width:16px;height:16px}
   .mrow .acts{display:flex;align-items:center;gap:4px;flex:none}
+  .mrow .who{display:flex;align-items:center;gap:4px;min-width:0}
+  .mrow .who .name{margin-right:4px}
   .mrow .info{margin-top:4px}
   .mrow .memo{display:flex;gap:8px;align-items:flex-start}
   .mrow .memo span{flex:1}
@@ -438,9 +440,11 @@ function viewMembers(){
       </div>` : `
       <div class="mrow">
         <div class="top">
-          <div class="name">${nameTag(m)}</div>
+          <div class="who">
+            <div class="name">${nameTag(m)}</div>
+            ${m.phone ? `<a class="sbtn2 call icon" href="tel:${telDigits(m.phone)}" aria-label="전화 걸기" title="전화">${ICON_PHONE}</a><a class="sbtn2 call icon" href="sms:${telDigits(m.phone)}" aria-label="문자 보내기" title="문자">${ICON_SMS}</a>` : ""}
+          </div>
           <div class="acts">
-            ${m.phone ? `<a class="sbtn2 call icon" href="tel:${telDigits(m.phone)}" aria-label="전화 걸기" title="전화">${ICON_PHONE}</a><a class="sbtn2 call icon" href="sms:${telDigits(m.phone)}" aria-label="문자 보내기" title="문자">${ICON_SMS}</a><span class="divider" aria-hidden="true"></span>` : ""}
             <button class="sbtn2" data-act="memoEdit" data-id="${m.id}">${m.memo?"메모":"+메모"}</button>
             <button class="sbtn2" data-act="editMember" data-id="${m.id}">수정</button>
             <button class="sbtn2 danger" data-act="deleteMember" data-id="${m.id}">삭제</button>
