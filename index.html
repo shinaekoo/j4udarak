@@ -92,6 +92,12 @@
   .reason-btn{border:1px dashed #e3b9b3;background:#fff;color:var(--no);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700}
   .reason-text{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--no);background:var(--no-soft);border-radius:10px;padding:8px 12px}
   .reason-text span{flex:1}
+  .sorter{display:flex;justify-content:space-between;align-items:center;margin:22px 4px 10px}
+  .sorter h2{margin:0}
+  .sortbtns{display:flex;background:#ebe8e1;border-radius:10px;padding:3px}
+  .sortbtns button{border:0;background:none;padding:6px 11px;border-radius:8px;font-size:13px;font-weight:700;color:var(--sub)}
+  .sortbtns button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .attcount{font-size:12px;font-weight:700;color:var(--yes);margin-left:6px;vertical-align:1px}
   .demo{font-size:12px;color:var(--sub);background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:14px;line-height:1.5}
 </style>
 </head>
@@ -341,14 +347,28 @@ function viewCheck(){
     </div>`;
 }
 
+let memberSort = localStorage.getItem("simple_member_sort") || "name";
+function attStat(mid){
+  const evs = events().filter(e=>e.marks[mid]);
+  const n = evs.filter(e=>e.marks[mid]==="o").length;
+  return { n, t: evs.length, r: evs.length ? n/evs.length : 0 };
+}
 function viewMembers(){
-  const list = members();
+  let list = members();
+  const st = {}; list.forEach(m=> st[m.id] = attStat(m.id));
+  if (memberSort==="att") list = list.slice().sort((a,b)=> st[b.id].n - st[a.id].n || st[b.id].r - st[a.id].r || a.name.localeCompare(b.name,"ko"));
   return `
     <div class="add">
       <input id="addName" placeholder="이름 (쉼표로 여러 명: 홍길동, 김하늘)" maxlength="60">
       <button class="btn primary" data-act="addMember">추가</button>
     </div>
-    <h2>순원 ${list.length}명</h2>
+    <div class="sorter">
+      <h2>순원 ${list.length}명</h2>
+      <div class="sortbtns">
+        <button class="${memberSort==="name"?"on":""}" data-act="sortMembers" data-v="name">ㄱㄴㄷ순</button>
+        <button class="${memberSort==="att"?"on":""}" data-act="sortMembers" data-v="att">출석순</button>
+      </div>
+    </div>
     <div class="card">${list.map(m=> editingMember===m.id ? `
       <div style="padding:12px 0;border-bottom:1px solid var(--line)">
         <div class="field"><label>이름</label><input id="eName" value="${esc(m.name)}" maxlength="12"></div>
@@ -370,7 +390,7 @@ function viewMembers(){
         </div>
       </div>` : `
       <div class="row">
-        <div style="min-width:0;flex:1"><div class="name">${nameTag(m)}</div>${memberInfo(m)}${memoBlock(m,true)}</div>
+        <div style="min-width:0;flex:1"><div class="name">${nameTag(m)}${st[m.id].t?`<span class="attcount">출석 ${st[m.id].n}/${st[m.id].t}</span>`:""}</div>${memberInfo(m)}${memoBlock(m,true)}</div>
         <div class="marks">
           <button class="btn" data-act="editMember" data-id="${m.id}">수정</button>
           <button class="btn danger" data-act="deleteMember" data-id="${m.id}">삭제</button>
@@ -482,6 +502,7 @@ document.addEventListener("click", async ev=>{
         editingMember=null; await put("simple_members","members", id, { name, bday, phone, gender, memo }); return toast("저장했어요");
       }
       case "cancelMember": editingMember=null; return render();
+      case "sortMembers": memberSort=v; localStorage.setItem("simple_member_sort", v); return render();
       case "reasonOpen": { reasonOpen.add(id); render(); const i=document.querySelector(`[data-reason="${id}"]`); if (i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length); } return; }
       case "pickGender": { const g=document.getElementById("eGender"); g.dataset.v=v; g.querySelectorAll("button").forEach(x=>x.classList.toggle("on", x.dataset.v===v)); return; }
       case "memoEdit": { editingMember=id; tab="members"; render(); const t=document.getElementById("eMemo"); if (t){ t.focus(); t.setSelectionRange(t.value.length,t.value.length); t.scrollIntoView({block:"center"}); } return; }
