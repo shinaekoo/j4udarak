@@ -88,6 +88,10 @@
   .reason-row input{width:100%;border:1px solid #efd3cf;background:var(--no-soft);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--ink)}
   .reason-row input::placeholder{color:#b98a84}
   .row.has-reason{border-bottom:0}
+  .reason-row:last-child{border-bottom:0}
+  .reason-btn{border:1px dashed #e3b9b3;background:#fff;color:var(--no);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700}
+  .reason-text{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--no);background:var(--no-soft);border-radius:10px;padding:8px 12px}
+  .reason-text span{flex:1}
   .demo{font-size:12px;color:var(--sub);background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:14px;line-height:1.5}
 </style>
 </head>
@@ -234,6 +238,7 @@ const events = ()=> Object.entries(store.events).map(([id,e])=>({id,...e,marks:e
 const count = (e,v)=> members().filter(m=>e.marks[m.id]===v).length;
 
 /* ---------- 화면 ---------- */
+const reasonOpen = new Set();   // 사유 입력칸을 열어 둔 순원
 let tab = "events", openEvent = null, showForm = false, editingMember = null, editingEvent = false;
 const $app = document.getElementById("app");
 
@@ -321,7 +326,11 @@ function viewCheck(){
           <button class="mk no ${absent?"on":""}" data-act="mark" data-id="${m.id}" data-v="x">결석</button>
         </div>
       </div>
-      ${absent?`<div class="reason-row"><input data-reason="${m.id}" value="${esc(reason)}" maxlength="60" placeholder="결석 이유 (예: 출장, 아파서)" enterkeyhint="done"></div>`:""}`; }).join("")}</div>` : `<div class="card"><div class="empty">순원이 없어요. 아래에서 바로 추가할 수 있어요.</div></div>`}
+      ${!absent ? "" : reasonOpen.has(m.id)
+        ? `<div class="reason-row"><input data-reason="${m.id}" value="${esc(reason)}" maxlength="60" placeholder="결석 사유 (예: 출장, 아파서)" enterkeyhint="done"></div>`
+        : reason
+          ? `<div class="reason-row"><div class="reason-text"><span>사유: ${esc(reason)}</span><button class="link" data-act="reasonOpen" data-id="${m.id}">수정</button></div></div>`
+          : `<div class="reason-row"><button class="reason-btn" data-act="reasonOpen" data-id="${m.id}">+ 사유 입력</button></div>`}`; }).join("")}</div>` : `<div class="card"><div class="empty">순원이 없어요. 아래에서 바로 추가할 수 있어요.</div></div>`}
     <div class="add">
       <input id="addName" placeholder="순원 추가 (쉼표로 여러 명)" maxlength="60">
       <button class="btn primary" data-act="addMember">추가</button>
@@ -434,7 +443,7 @@ document.addEventListener("click", async ev=>{
         window.scrollTo(0,0); return toast("일정을 만들었어요");
       }
       case "open": openEvent=id; tab="events"; editingEvent=false; render(); return window.scrollTo(0,0);
-      case "back": openEvent=null; editingEvent=false; return render();
+      case "back": openEvent=null; editingEvent=false; reasonOpen.clear(); return render();
       case "editEvent": editingEvent=true; return render();
       case "cancelEditEvent": editingEvent=false; return render();
       case "saveEvent": { const data = readEventForm(); if (!data) return; editingEvent=false; await put("simple_events","events", openEvent, data); return toast("저장했어요"); }
@@ -444,10 +453,8 @@ document.addEventListener("click", async ev=>{
       }
       case "mark": {
         const cur = (store.events[openEvent].marks||{})[id], next = cur===v ? null : v;
-        if (next!=="x" && (store.events[openEvent].reasons||{})[id]) await setReason(openEvent, id, "");
-        await setMark(openEvent, id, next);
-        if (next==="x") document.querySelector(`[data-reason="${id}"]`)?.focus();
-        return;
+        if (next!=="x"){ reasonOpen.delete(id); if ((store.events[openEvent].reasons||{})[id]) await setReason(openEvent, id, ""); }
+        return setMark(openEvent, id, next);
       }
       case "restAbsent": {
         const marks = store.events[openEvent].marks || {}, rest = members().filter(m=>!marks[m.id]);
@@ -475,6 +482,7 @@ document.addEventListener("click", async ev=>{
         editingMember=null; await put("simple_members","members", id, { name, bday, phone, gender, memo }); return toast("저장했어요");
       }
       case "cancelMember": editingMember=null; return render();
+      case "reasonOpen": { reasonOpen.add(id); render(); const i=document.querySelector(`[data-reason="${id}"]`); if (i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length); } return; }
       case "pickGender": { const g=document.getElementById("eGender"); g.dataset.v=v; g.querySelectorAll("button").forEach(x=>x.classList.toggle("on", x.dataset.v===v)); return; }
       case "memoEdit": { editingMember=id; tab="members"; render(); const t=document.getElementById("eMemo"); if (t){ t.focus(); t.setSelectionRange(t.value.length,t.value.length); t.scrollIntoView({block:"center"}); } return; }
       case "memoDelete": { if (!confirm(`${store.members[id].name}님 메모를 지울까요?`)) return; await put("simple_members","members", id, { memo:"" }); return toast("메모를 지웠어요"); }
@@ -499,7 +507,7 @@ document.addEventListener("click", async ev=>{
 document.addEventListener("change", async e=>{
   const mid = e.target.dataset && e.target.dataset.reason;
   if (!mid || !openEvent) return;
-  try { await setReason(openEvent, mid, clean(e.target.value)); toast(e.target.value.trim() ? "결석 이유를 저장했어요" : "결석 이유를 지웠어요"); }
+  try { const v = clean(e.target.value); reasonOpen.delete(mid); await setReason(openEvent, mid, v); render(); if (v) toast("결석 사유를 저장했어요"); }
   catch(err){ console.error(err); toast("저장 중 오류가 났어요"); }
 });
 document.addEventListener("keydown", e=>{
