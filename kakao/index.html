@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>J4U 순모임 출석체크 (카카오)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<style>
+  :root{ --bg:#f6f4ef; --card:#fff; --ink:#1f2328; --sub:#6b7078; --line:#e7e3da;
+    --yes:#2f6b4f; --yes-soft:#e3efe8; --no:#b4483c; --no-soft:#f6e3e0; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Pretendard,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;-webkit-font-smoothing:antialiased}
+  button,input{font:inherit}
+  button{cursor:pointer}
+  .wrap{max-width:560px;margin:0 auto;padding:0 16px 80px}
+  header{position:sticky;top:0;z-index:5;background:rgba(246,244,239,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .hbar{max-width:560px;margin:0 auto;padding:14px 16px 8px;font-weight:800;font-size:19px;letter-spacing:-.3px}
+  .hbar small{display:block;font-weight:500;font-size:12px;color:var(--sub)}
+  .tabs{max-width:560px;margin:0 auto;display:flex;gap:4px;padding:0 12px 10px}
+  .tab{flex:1;border:0;background:transparent;padding:9px 0;border-radius:10px;color:var(--sub);font-weight:600}
+  .tab.on{background:var(--ink);color:#fff}
+  h2{font-size:14px;color:var(--sub);font-weight:700;margin:22px 4px 10px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:4px 16px;margin-bottom:12px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .row.click{cursor:pointer}
+  .name{font-weight:700;font-size:16px}
+  .sub{font-size:13px;color:var(--sub)}
+  .marks{display:flex;gap:6px;flex:none}
+  .mk{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:9px 14px;font-weight:700;color:var(--sub);font-size:14px}
+  .mk.yes.on{background:var(--yes);border-color:var(--yes);color:#fff}
+  .mk.no.on{background:var(--no);border-color:var(--no);color:#fff}
+  .tools{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 12px}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px;font-weight:600;font-size:13px;color:var(--ink)}
+  .btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.danger{color:var(--no)}
+  .big{width:100%;margin-top:16px;padding:15px 0;border:0;border-radius:12px;background:var(--yes);color:#fff;font-weight:800;font-size:16px}
+  .form{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-top:12px}
+  .field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;min-width:0}
+  .field label{font-size:13px;color:var(--sub);font-weight:600}
+  .field input{border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#fbfaf7;min-width:0;width:100%}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .add{display:flex;gap:6px;margin:16px 0 4px}
+  .add input{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#fff}
+  .add button{white-space:nowrap}
+  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center}
+  .stat .n{font-size:22px;font-weight:800}
+  .stat .l{font-size:12px;color:var(--sub)}
+  .stat.yes .n{color:var(--yes)} .stat.no .n{color:var(--no)}
+  .back{border:0;background:none;color:var(--sub);font-weight:600;padding:16px 0 0;font-size:14px}
+  .evhead{margin-top:8px}
+  .evhead .t{font-size:22px;font-weight:800;letter-spacing:-.4px}
+  .pill{font-size:12px;font-weight:700;padding:3px 8px;border-radius:999px;background:#f1efe9;color:var(--sub);white-space:nowrap}
+  .pill.today{background:var(--yes);color:#fff}
+  .pill.done{background:var(--yes-soft);color:var(--yes)}
+  .bar{height:6px;background:#eee;border-radius:3px;overflow:hidden;margin-top:6px}
+  .bar i{display:block;height:100%;background:var(--yes)}
+  .empty{text-align:center;color:var(--sub);padding:28px 0;font-size:14px;line-height:1.6}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:999px;font-size:14px;opacity:0;transition:.25s;z-index:30;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .loading{text-align:center;padding:80px 0;color:var(--sub)}
+  .lock{max-width:320px;margin:90px auto 0;text-align:center}
+  .lock h1{font-size:24px;margin:0 0 8px}
+  .lock p{color:var(--sub);margin:0 0 24px}
+  .lock input{width:100%;border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center;font-size:18px;background:#fff;margin-bottom:10px}
+  .info{font-size:13px;color:var(--sub);margin-top:3px;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+  .tel{color:var(--yes);font-weight:600;text-decoration:none;border:0;background:none;padding:0;font-size:13px}
+  .bday-soon{background:#fdf1d8;color:#8a5a00;font-weight:700;border-radius:999px;padding:2px 8px;font-size:12px}
+  .bdays{background:#fff8e8;border:1px solid #f1dfb4;border-radius:14px;padding:12px 14px;margin-top:14px}
+  .bdays b{display:block;font-size:13px;color:#8a5a00;margin-bottom:6px}
+  .bdays div{font-size:14px;padding:3px 0}
+  .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:20;display:none;align-items:flex-end;justify-content:center}
+  .sheet-bg.open{display:flex}
+  .sheet{background:var(--bg);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:20px 16px 28px}
+  .sheet a{display:block;text-align:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:15px 0;margin-bottom:8px;font-weight:700;color:var(--ink);text-decoration:none;font-size:16px}
+  .gender{font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;margin-left:6px;vertical-align:2px}
+  .gender.m{background:#e3ebf6;color:#3a5a8c} .gender.f{background:#f6e3ec;color:#8c3a62}
+  .memo{margin-top:6px;font-size:13px;color:var(--ink);background:#f7f5f0;border-radius:8px;padding:7px 9px;white-space:pre-wrap;line-height:1.5}
+  .memo-tools{display:inline-flex;gap:8px;margin-left:6px}
+  .link{border:0;background:none;padding:0;font-size:12px;font-weight:600;color:var(--sub);cursor:pointer}
+  .link.danger{color:var(--no)}
+  .seg{display:flex;gap:6px}
+  .seg button{flex:1;border:1px solid var(--line);background:#fbfaf7;border-radius:10px;padding:10px 0;font-weight:700;color:var(--sub)}
+  .seg button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  textarea.memo-in{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fbfaf7;font:inherit;resize:vertical;min-height:70px;width:100%}
+  .reason-row{padding:0 0 12px;margin-top:-4px;border-bottom:1px solid var(--line)}
+  .reason-row input{width:100%;border:1px solid #efd3cf;background:var(--no-soft);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--ink)}
+  .reason-row input::placeholder{color:#b98a84}
+  .row.has-reason{border-bottom:0}
+  .reason-row:last-child{border-bottom:0}
+  .mk.reason-mk{border-style:dashed;border-color:#e3b9b3;color:var(--no);padding:9px 10px}
+  .mk.reason-mk.has{border-style:solid;background:var(--no-soft)}
+  .reason-inline{margin-top:4px;font-size:13px;color:var(--no);font-weight:600}
+  .reason-btn{border:1px dashed #e3b9b3;background:#fff;color:var(--no);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700}
+  .reason-text{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--no);background:var(--no-soft);border-radius:10px;padding:8px 12px}
+  .reason-text span{flex:1}
+  .sorter{display:flex;justify-content:space-between;align-items:center;margin:22px 4px 10px}
+  .sorter h2{margin:0}
+  .sortbtns{display:flex;background:#ebe8e1;border-radius:10px;padding:3px}
+  .sortbtns button{border:0;background:none;padding:6px 9px;border-radius:8px;font-size:13px;font-weight:700;color:var(--sub)}
+  .sortbtns button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .attcount{font-size:12px;font-weight:700;color:var(--yes);margin-left:6px;vertical-align:1px}
+  a.btn{text-decoration:none;display:inline-flex;align-items:center}
+  .btn.call{color:var(--yes)}
+  .gdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:2px}
+  .gdot.f{background:#ec6fa0} .gdot.m{background:#4a7fd6}
+  .mrow{padding:11px 0;border-bottom:1px solid var(--line)}
+  .mrow:last-child{border-bottom:0}
+  .namelink{border:0;background:none;padding:0;text-align:left;color:var(--ink);cursor:pointer}
+  .mrow.flash{animation:flash 1.6s ease}
+  @keyframes flash{0%,40%{background:#fff3c4}100%{background:transparent}}
+  .mrow .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .mrow .top .name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sbtn2{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 9px;font-weight:700;font-size:12px;color:var(--ink);text-decoration:none;display:inline-flex;align-items:center}
+  .sbtn2.call{color:var(--yes)} .sbtn2.danger{color:var(--no)}
+  .sbtn2.icon{width:30px;height:29px;padding:0;justify-content:center}
+  .sbtn2.icon svg{width:16px;height:16px}
+  .mrow .acts{display:flex;align-items:center;gap:4px;flex:none}
+  .mrow .who{display:flex;align-items:center;gap:4px;min-width:0}
+  .mrow .who .name{margin-right:2px}
+  .mrow .who .attcount{margin:0 2px 0 0;white-space:nowrap}
+  .mrow .who .divider{height:18px;align-self:center;margin:0 3px}
+  .mrow .acts .sbtn2{padding:5px 6px}
+  .mrow .acts{gap:3px}
+  .mrow .who{gap:3px}
+  .mrow .sbtn2.icon{width:26px;height:26px;flex:none}
+  .mrow .sbtn2.icon svg{width:14px;height:14px}
+  .mrow .top .name{flex:none;overflow:visible}          /* 이름은 절대 잘리지 않게 */
+  .mrow .who .attcount{font-size:11px;min-width:0;overflow:hidden;text-overflow:clip}
+  .mrow .who{overflow:hidden;flex:1 1 auto}
+  .mrow .who .divider{flex:none}
+  @media (max-width:380px){ .wrap{padding:0 10px 80px} .card{padding:4px 12px} }
+  .mrow .info{margin-top:4px}
+  .mrow .memo{display:flex;gap:8px;align-items:flex-start}
+  .mrow .memo span{flex:1}
+  .memo-x{border:0;background:none;color:var(--sub);font-size:15px;line-height:1;padding:0 2px;cursor:pointer}
+  .divider{width:1px;align-self:stretch;background:var(--line);margin:4px 2px}
+  .demo{font-size:12px;color:var(--sub);background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:14px;line-height:1.5}
+  .kakao{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:#FEE500;color:#191919;border:0;border-radius:12px;padding:15px 0;font-weight:700;font-size:16px}
+  .rsvp-badge{display:inline-block;margin-top:4px;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px}
+  .rsvp-badge.yes{background:var(--yes-soft);color:var(--yes)} .rsvp-badge.no{background:var(--no-soft);color:var(--no)}
+  .linked{font-size:11px;font-weight:700;color:#8a6d00;background:#fff4c2;border-radius:999px;padding:2px 6px;margin-left:4px;vertical-align:1px}
+  .selfmemo{margin-top:6px;font-size:13px;background:#eef4fb;border-radius:8px;padding:7px 9px;white-space:pre-wrap;line-height:1.5}
+  .selfmemo b{font-size:11px;color:#3a5a8c;display:block;margin-bottom:2px}
+  .ecard{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:10px}
+  .ecard.today{border:2px solid var(--yes)}
+  .ecard .t{font-weight:800;font-size:17px}
+  .rsvp{display:flex;gap:8px;margin-top:12px}
+  .rbtn{flex:1;padding:12px 0;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-weight:700;color:var(--sub)}
+  .rbtn.yes.on{background:var(--yes);border-color:var(--yes);color:#fff}
+  .rbtn.no.on{background:var(--no);border-color:var(--no);color:#fff}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:20;display:none;align-items:flex-end;justify-content:center}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--bg);width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:20px 20px 0 0;padding:20px 16px 28px}
+  .modal h3{margin:0 0 4px;font-size:19px}
+  .pick{display:block;width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:12px;padding:13px 14px;margin-bottom:8px;font-weight:700;font-size:16px}
+  .rolepick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}
+  .rolepick button{border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:14px 0;font-weight:800;font-size:15px;color:var(--sub)}
+  .rolepick button.on{border-color:var(--ink);background:var(--ink);color:#fff}
+  .whoami{border:0;background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-weight:700;font-size:13px;color:var(--ink)}
+  .hrow{display:flex;justify-content:space-between;align-items:center}
+</style>
+</head>
+<body>
+<header id="hdr" style="display:none">
+  <div class="hbar hrow"><div>J4U 순모임 출석체크<small id="subtitle"></small></div><button class="whoami" id="whoami" data-act="profile"></button></div>
+  <div class="tabs" id="tabs"></div>
+</header>
+<div class="wrap" id="app"><div class="loading">불러오는 중…</div></div>
+<div class="toast" id="toast"></div>
+<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet"></div></div>
+<div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
+
+<script type="module">
+/* =========================================================
+   설정 — 카카오 키·Firebase 값·순장 비밀번호를 채우면 됩니다
+   ========================================================= */
+const CONFIG = {
+  GROUP_NAME: "J4U 순모임",
+  // 카카오 개발자센터 > 플랫폼 키 > [대표] REST API 키
+  KAKAO_REST_KEY: "eaaf7e5dfc99217b7201ea326b81981f",
+  // REST API 키 화면의 클라이언트 시크릿 (꺼져 있으면 "")
+  KAKAO_CLIENT_SECRET: "wPJCeNvvjc2irl1QT6qeM1Gxwu0rL2At",
+  // 순장 비밀번호: 처음 로그인할 때 '순장입니다'를 고르고 이 비밀번호를 넣으면 순장이 돼요
+  LEADER_PASSWORD: "1234",
+  FIREBASE: {
+    apiKey: "AIzaSyAmv1pHlLahYythXiT15cGqlEnHJEtg9e0",
+    authDomain: "darak-attendance.firebaseapp.com",
+  projectId: "darak-attendance",
+  storageBucket: "darak-attendance.firebasestorage.app",
+  messagingSenderId: "956597071783",
+  appId: "1:956597071783:web:68c888e812316699769082",
+  measurementId: "G-4YQZCZ2FPD"
+  }
+};
+/* ========================================================= */
+
+const DEMO = CONFIG.KAKAO_REST_KEY.startsWith("YOUR_") || CONFIG.FIREBASE.apiKey.startsWith("YOUR_");
+const PAGE_URL = location.origin + location.pathname;
+const WD = ["일","월","화","수","목","금","토"];
+// Firestore (이 버전 전용):
+//   v2_members/{id} = {name, gender, bday, byear, phone, memo(순장 메모), selfMemo(본인 메모), kakaoId}
+//   v2_events/{id}  = {date, time, title, marks:{id:"o"|"x"}, reasons:{id:text}, rsvp:{id:"yes"|"no"}, rsvpReason:{id:text}}
+//   v2_leaders/{kakaoId} = {name}
+const store = { members:{}, events:{}, leaders:{} };
+let fs = null, db = null, ready = false;
+
+/* ---------- 저장소 ---------- */
+const COL = { members:"v2_members", events:"v2_events", leaders:"v2_leaders" };
+async function initData(){
+  if (DEMO){
+    const saved = JSON.parse(localStorage.getItem("v2_demo") || "null");
+    if (saved) Object.assign(store, saved); else seedDemo();
+    return;
+  }
+  const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+  fs = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+  db = fs.getFirestore(initializeApp(CONFIG.FIREBASE));
+  const first = key => new Promise(res => fs.onSnapshot(fs.collection(db, COL[key]), snap => {
+    const m = {}; snap.forEach(d => m[d.id] = d.data()); store[key] = m; res();
+    if (ready && !(document.activeElement && document.activeElement.dataset && document.activeElement.dataset.reason)) render();
+  }, err => { console.error(err); toast("데이터를 불러오지 못했어요"); res(); }));
+  await Promise.all(["members","events","leaders"].map(first));
+}
+const persist = ()=> { if (DEMO) localStorage.setItem("v2_demo", JSON.stringify(store)); };
+async function put(key, id, data){
+  store[key][id] = { ...(store[key][id]||{}), ...data }; persist(); render();
+  if (!DEMO) await fs.setDoc(fs.doc(db, COL[key], id), data, { merge:true });
+}
+async function drop(key, id){
+  delete store[key][id]; persist(); render();
+  if (!DEMO) await fs.deleteDoc(fs.doc(db, COL[key], id));
+}
+// 일정 안의 사람별 값 (marks / reasons / rsvp / rsvpReason)
+async function setEv(eid, field, mid, val, quiet){
+  const e = store.events[eid]; e[field] = e[field] || {};
+  if (val) e[field][mid] = val; else delete e[field][mid];
+  persist(); if (!quiet) render();
+  if (!DEMO) await fs.setDoc(fs.doc(db, COL.events, eid), { [field]:{ [mid]: val || fs.deleteField() } }, { merge:true });
+}
+function seedDemo(){
+  const t = new Date(), d = n => { const x = new Date(t); x.setDate(x.getDate()+n); return ymd(x); };
+  const ppl = [["김하늘","f","950601","01012345678"],["이도윤","m","880101","01022223333"],["박서연","f","",""],["최민준","m","920315","01044445555"],["정지우","f","",""]];
+  ppl.forEach(([n,g,b,p],i)=>{ const bd = parseBday(b)||{bday:"",byear:""}; store.members["dm"+i] = { name:n, gender:g, ...bd, phone:p, memo:"", selfMemo:"", kakaoId: i===2 ? "demo_member" : "" }; });
+  store.members.dm0.memo = "기도제목: 이직 준비";
+  store.members.dm2.selfMemo = "이번 달은 주말 출근이 있어요";
+  store.leaders.demo_leader = { name:"순장(데모)" };
+  store.events.de1 = { date:d(-14), time:"19:00", title:"순모임", marks:{dm0:"o",dm1:"o",dm2:"x",dm3:"o",dm4:"o"}, reasons:{dm2:"출장"} };
+  store.events.de2 = { date:d(-7), time:"19:00", title:"순모임", marks:{dm0:"o",dm1:"x",dm2:"o",dm3:"o",dm4:"x"}, reasons:{dm1:"가족 행사"} };
+  store.events.de3 = { date:d(3), time:"19:00", title:"순모임", marks:{}, rsvp:{dm0:"yes",dm3:"no"}, rsvpReason:{dm3:"야근"} };
+}
+
+/* ---------- 도우미 ---------- */
+const pad = n=>String(n).padStart(2,"0");
+const ymd = d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today = ()=> ymd(new Date());
+const parse = s=>{ const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
+const dLabel = s=>{ const d=parse(s); return `${d.getMonth()+1}월 ${d.getDate()}일 (${WD[d.getDay()]})`; };
+const tLabel = t=>{ if(!t) return ""; let [h,m]=t.split(":").map(Number); const ap=h<12?"오전":"오후"; h=h%12||12; return `${ap} ${h}:${pad(m)}`; };
+const esc = s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clean = v=>String(v||"").trim().replace(/\s+/g," ");
+const newId = p=> p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function toast(m, ms=1600){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),ms); }
+/* 생일: YYMMDD(예: 900314) → bday "MM-DD" + byear "1990". 연도 모르면 MMDD 4자리도 가능 */
+function parseBday(v){
+  const d = String(v||"").replace(/\D/g,"");
+  if (!d) return { bday:"", byear:"" };
+  let yy = "", mm, dd;
+  if (d.length===6){ yy=d.slice(0,2); mm=+d.slice(2,4); dd=+d.slice(4,6); }
+  else if (d.length===4){ mm=+d.slice(0,2); dd=+d.slice(2,4); }
+  else return null;
+  if (!(mm>=1 && mm<=12 && dd>=1 && dd<=31)) return null;
+  const nowYY = new Date().getFullYear() % 100;
+  return { bday:`${pad(mm)}-${pad(dd)}`, byear: yy ? String((+yy > nowYY ? 1900 : 2000) + +yy) : "" };
+}
+const bdayInput = m => m.bday ? (m.byear ? m.byear.slice(2) : "") + m.bday.replace("-","") : "";
+const bdayLabel = b => { const [m,d]=b.split("-").map(Number); return `${m}월 ${d}일`; };
+const bdayFull = m => bdayLabel(m.bday) + (m.byear ? ` (${m.byear.slice(2)}년생)` : "");
+function daysToBday(b){
+  if (!b) return null;
+  const [m,d] = b.split("-").map(Number), now = new Date(), t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let next = new Date(now.getFullYear(), m-1, d); if (next < t0) next = new Date(now.getFullYear()+1, m-1, d);
+  return Math.round((next - t0)/86400000);
+}
+const ddayText = n => n===0 ? "오늘 생일 🎉" : `생일 D-${n}`;
+const telDigits = v => String(v||"").replace(/[^\d+]/g,"");
+function fmtPhone(v){
+  const d = telDigits(v);
+  if (/^01\d{8,9}$/.test(d)) return d.length===10 ? `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}` : `${d.slice(0,3)}-${d.slice(3,7)}-${d.slice(7)}`;
+  return String(v||"").trim();
+}
+const ICON_PHONE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>`;
+const ICON_SMS = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
+const nameTag = m => `${m.gender==="f"?`<span class="gdot f" title="여"></span>`:m.gender==="m"?`<span class="gdot m" title="남"></span>`:""}${esc(m.name)}`;
+function bdayLine(m){
+  if (!m.bday) return "";
+  const n = daysToBday(m.bday);
+  return `<div class="info">${n<=7 ? `<span class="bday-soon">🎂 ${bdayFull(m)} · ${ddayText(n)}</span>` : `<span>🎂 ${bdayFull(m)}</span>`}</div>`;
+}
+const members = ()=> Object.entries(store.members).map(([id,m])=>({id,...m})).sort((a,b)=>a.name.localeCompare(b.name,"ko"));
+const events = ()=> Object.entries(store.events).map(([id,e])=>({id,...e,marks:e.marks||{},reasons:e.reasons||{},rsvp:e.rsvp||{},rsvpReason:e.rsvpReason||{}}))
+  .sort((a,b)=> (b.date+(b.time||"")).localeCompare(a.date+(a.time||"")));
+const count = (e,v)=> members().filter(m=>e.marks[m.id]===v).length;
+function attStat(mid, excludeId){
+  const evs = events().filter(e=>e.id!==excludeId && e.marks[mid]);
+  const n = evs.filter(e=>e.marks[mid]==="o").length;
+  return { n, t: evs.length, r: evs.length ? n/evs.length : 0 };
+}
+let memberSort = localStorage.getItem("v2_member_sort") || "name";
+function sortedMembers(){
+  const list = members(), st = {}; list.forEach(m=> st[m.id] = attStat(m.id));
+  const g = m => m.gender==="f" ? 0 : m.gender==="m" ? 1 : 2, ak = m => m.byear && m.bday ? m.byear + m.bday : "9999";
+  if (memberSort==="att") list.sort((a,b)=> st[b.id].n - st[a.id].n || st[b.id].r - st[a.id].r || a.name.localeCompare(b.name,"ko"));
+  if (memberSort==="age") list.sort((a,b)=> ak(a).localeCompare(ak(b)) || a.name.localeCompare(b.name,"ko"));
+  if (memberSort==="gender") list.sort((a,b)=> g(a)-g(b) || a.name.localeCompare(b.name,"ko"));
+  return { list, st };
+}
+const sortToggle = ()=> `<div class="sortbtns">${[["name","ㄱㄴㄷ순"],["att","출석순"],["age","연령순"],["gender","성별순"]].map(([v,l])=>`<button class="${memberSort===v?"on":""}" data-act="sortMembers" data-v="${v}">${l}</button>`).join("")}</div>`;
+const upcomingBdays = ()=> members().filter(m=>m.bday).map(m=>({...m, dd:daysToBday(m.bday)})).filter(m=>m.dd<=7).sort((a,b)=>a.dd-b.dd);
+function birthdayToasts(){
+  if (!isLeader()) return;
+  const key = "v2_bday_seen_" + today(), seen = new Set(JSON.parse(localStorage.getItem(key) || "[]")), msgs = [];
+  upcomingBdays().forEach(m=>{
+    if (![7,3,1,0].includes(m.dd) || seen.has(m.id)) return;
+    seen.add(m.id); msgs.push(m.dd===0 ? `🎉 오늘은 ${m.name}님 생일이에요!` : `🎂 ${m.name}님 생일이 ${m.dd}일 남았어요 (${bdayLabel(m.bday)})`);
+  });
+  localStorage.setItem(key, JSON.stringify([...seen]));
+  msgs.forEach((msg,i)=> setTimeout(()=>toast(msg, 3200), 600 + i*3600));
+}
+
+/* ---------- 카카오 로그인 · 역할 ---------- */
+let user = null;   // { id, nickname }
+const isLeader = ()=> !!(user && store.leaders[user.id]);
+const myMember = ()=> user ? members().find(m=>m.kakaoId===user.id) : null;
+async function initAuth(){
+  const code = new URLSearchParams(location.search).get("code");
+  if (code && !DEMO){
+    history.replaceState(null, "", location.pathname);
+    try{
+      const body = { grant_type:"authorization_code", client_id:CONFIG.KAKAO_REST_KEY, redirect_uri:PAGE_URL, code };
+      if (CONFIG.KAKAO_CLIENT_SECRET) body.client_secret = CONFIG.KAKAO_CLIENT_SECRET;
+      const tok = await fetch("https://kauth.kakao.com/oauth/token", { method:"POST", headers:{ "Content-Type":"application/x-www-form-urlencoded;charset=utf-8" }, body:new URLSearchParams(body) }).then(r=>r.json());
+      if (!tok.access_token) throw new Error(tok.error_description || "토큰 발급 실패");
+      const me = await fetch("https://kapi.kakao.com/v2/user/me", { headers:{ Authorization:"Bearer "+tok.access_token } }).then(r=>r.json());
+      const p = (me.kakao_account && me.kakao_account.profile) || {};
+      user = { id:String(me.id), nickname: p.nickname || (me.properties||{}).nickname || "" };
+      localStorage.setItem("v2_user", JSON.stringify(user));
+    }catch(e){ toast("카카오 로그인에 실패했어요: " + e.message, 4000); }
+  } else user = JSON.parse(localStorage.getItem(DEMO ? "v2_demo_user" : "v2_user") || "null");
+}
+function login(demoAs){
+  if (DEMO){ user = { id: demoAs, nickname: demoAs==="demo_leader" ? "순장" : "박서연" }; localStorage.setItem("v2_demo_user", JSON.stringify(user)); return start(); }
+  const force = localStorage.getItem("v2_force_login")==="1"; localStorage.removeItem("v2_force_login");
+  location.href = `https://kauth.kakao.com/oauth/authorize?client_id=${CONFIG.KAKAO_REST_KEY}&redirect_uri=${encodeURIComponent(PAGE_URL)}&response_type=code${force?"&prompt=login":""}`;
+}
+function logout(){
+  localStorage.removeItem(DEMO ? "v2_demo_user" : "v2_user"); localStorage.setItem("v2_force_login","1");
+  user = null; closeModal(); tab = null; render();
+}
+
+/* ---------- 화면 공통 ---------- */
+let tab = null, openEvent = null, showForm = false, editingMember = null, editingEvent = false, checkFilter = "all";
+const reasonOpen = new Set();
+const $app = document.getElementById("app"), $bg = document.getElementById("modalBg"), $modal = document.getElementById("modal");
+const $sheetBg = document.getElementById("sheetBg");
+$sheetBg.addEventListener("click", e=>{ if (e.target===$sheetBg) $sheetBg.classList.remove("open"); });
+$bg.addEventListener("click", e=>{ if (e.target===$bg && !$modal.querySelector("[data-onboard]")) closeModal(); });
+function openModal(html){ $modal.innerHTML = html; $bg.classList.add("open"); }
+function closeModal(){ $bg.classList.remove("open"); }
+
+function render(){
+  const hdr = document.getElementById("hdr");
+  if (!user){
+    hdr.style.display = "none";
+    $app.innerHTML = `
+      <div class="lock">
+        <h1>${esc(CONFIG.GROUP_NAME)}</h1>
+        <p>카카오로 로그인하고<br>모임 참석을 미리 알려 주세요</p>
+        ${DEMO ? `
+          <button class="kakao" data-act="login" data-v="demo_leader">데모: 순장으로 들어가기</button>
+          <button class="kakao" style="margin-top:8px;background:#fff;border:1px solid var(--line)" data-act="login" data-v="demo_member">데모: 순원(박서연)으로 들어가기</button>
+          <div class="demo">지금은 <b>데모 모드</b>예요. 카카오 키와 Firebase 값을 넣으면 실제로 동작해요.</div>`
+        : `<button class="kakao" data-act="login">카카오로 시작하기</button>
+           ${localStorage.getItem("v2_force_login")==="1" ? `<div class="sub" style="margin-top:12px">다른 카카오 계정으로 로그인할 수 있어요.</div>` : ""}`}
+      </div>`;
+    return;
+  }
+  const leader = isLeader(), me = myMember();
+  if (!leader && !me){ hdr.style.display = "none"; $app.innerHTML = `<div class="loading">처음 오셨네요 👋</div>`; return onboard(); }
+  hdr.style.display = "";
+  const tabs = leader ? [["events","일정"],["members","순원"],["stats","기록"]] : [["mEvents","일정"],["mStats","내 기록"],["mInfo","내 정보"]];
+  if (!tabs.some(t=>t[0]===tab)) tab = tabs[0][0];
+  document.getElementById("tabs").innerHTML = tabs.map(([v,l])=>`<button class="tab ${tab===v?"on":""}" data-tab="${v}">${l}</button>`).join("");
+  document.getElementById("subtitle").textContent = (DEMO ? "데모 · " : "") + (leader ? `순장 · 순원 ${members().length}명` : `${me.name}님`);
+  document.getElementById("whoami").textContent = leader ? (store.leaders[user.id].name || "순장") : me.name;
+  const views = { events: ()=> openEvent && store.events[openEvent] ? viewCheck() : viewEvents(), members:viewMembers, stats:viewStats, mEvents:viewMyEvents, mStats:viewMyStats, mInfo:viewMyInfo };
+  $app.innerHTML = views[tab]();
+}
+
+/* ---------- 처음 로그인: 순원/순장 고르기 ---------- */
+let onboardRole = "member", onboardErr = "", newName = false;
+function onboard(){
+  const unlinked = members().filter(m=>!m.kakaoId);
+  const body = onboardRole==="member" ? (newName || !unlinked.length ? `
+      <div class="field"><label>내 이름</label><input id="ob_name" maxlength="12" placeholder="실명으로 적어 주세요"></div>
+      <button class="big" style="margin-top:4px" data-act="obNew">시작하기</button>
+      ${unlinked.length ? `<button class="btn" style="width:100%;margin-top:8px;border:0;background:none;color:var(--sub)" data-act="obList">← 명단에서 고르기</button>` : ""}` : `
+      <div class="sub" style="margin-bottom:8px">순장님이 만들어 둔 명단에서 내 이름을 눌러 주세요.</div>
+      ${unlinked.map(m=>`<button class="pick" data-act="obPick" data-id="${m.id}">${nameTag(m)}</button>`).join("")}
+      <button class="btn" style="width:100%;margin-top:4px" data-act="obNewMode">명단에 내 이름이 없어요</button>`)
+    : `
+      <div class="field"><label>이름</label><input id="ob_name" maxlength="12" placeholder="예: 김하늘" value="${esc(user.nickname||"")}"></div>
+      <div class="field"><label>순장 비밀번호</label><input id="ob_pw" type="password"></div>
+      <button class="big" style="margin-top:4px" data-act="obLeader">순장으로 시작하기</button>`;
+  openModal(`
+    <div data-onboard>
+      <h3>반가워요! 👋</h3>
+      <div class="sub">처음 한 번만 하면 돼요.</div>
+      <div class="rolepick"><button class="${onboardRole==="member"?"on":""}" data-act="obRole" data-v="member">순원입니다</button><button class="${onboardRole==="leader"?"on":""}" data-act="obRole" data-v="leader">순장입니다</button></div>
+      ${body}
+      ${onboardErr?`<div style="color:var(--no);font-size:13px;margin-top:10px">${esc(onboardErr)}</div>`:""}
+      <button class="btn" style="width:100%;margin-top:14px;border:0;background:none;color:var(--sub)" data-act="logout">다른 계정으로 로그인</button>
+    </div>`);
+}
+
+/* ---------- 순장: 일정 ---------- */
+function eventForm(e){
+  const v = e || { date: today(), time: "19:00", title: "순모임" };
+  return `
+    <div class="form">
+      <div class="grid2">
+        <div class="field"><label>날짜</label><input id="f_date" type="date" value="${esc(v.date)}"></div>
+        <div class="field"><label>시간 (선택)</label><input id="f_time" type="time" value="${esc(v.time||"")}"></div>
+      </div>
+      <div class="field"><label>일정 이름</label><input id="f_title" value="${esc(v.title)}" maxlength="20"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" style="flex:1;padding:12px" data-act="${e?"cancelEditEvent":"closeForm"}">취소</button>
+        <button class="btn primary" style="flex:2;padding:12px" data-act="${e?"saveEvent":"createEvent"}">${e?"저장":"일정 만들기"}</button>
+      </div>
+    </div>`;
+}
+function viewEvents(){
+  const list = events(), t = today();
+  const row = e => { const o=count(e,"o"), x=count(e,"x"), total=members().length, done = total && o+x===total;
+    const ry = Object.values(e.rsvp).filter(v=>v==="yes").length, rn = Object.values(e.rsvp).filter(v=>v==="no").length;
+    return `<div class="row click" data-act="open" data-id="${e.id}">
+      <div><div class="name">${esc(e.title)}</div><div class="sub">${dLabel(e.date)}${e.time?" · "+tLabel(e.time):""}</div></div>
+      <div style="text-align:right">${e.date===t?`<span class="pill today">오늘</span> `:""}${done?`<span class="pill done">체크 완료</span>`:""}
+        <div class="sub" style="margin-top:4px">${e.date>t ? `예고 참석 ${ry} · 불참 ${rn}` : `출석 ${o} · 결석 ${x}`}</div></div>
+    </div>`; };
+  const upcoming = list.filter(e=>e.date>=t).reverse(), past = list.filter(e=>e.date<t);
+  return `
+    ${showForm ? eventForm() : `<button class="big" data-act="newEvent">+ 일정 추가</button>`}
+    ${upcomingBdays().length ? `<div class="bdays"><b>🎂 다가오는 생일 (7일 이내)</b>${upcomingBdays().map(m=>`<div>${esc(m.name)} · ${bdayLabel(m.bday)} · <strong>${m.dd===0?"오늘!":"D-"+m.dd}</strong></div>`).join("")}</div>` : ""}
+    ${!members().length ? `<div class="demo">먼저 <b>순원</b> 탭에서 순원을 추가해 주세요.</div>` : ""}
+    ${upcoming.length?`<h2>예정·오늘</h2><div class="card">${upcoming.map(row).join("")}</div>`:""}
+    ${past.length?`<h2>지난 일정</h2><div class="card">${past.map(row).join("")}</div>`:""}
+    ${!list.length?`<div class="empty" style="padding-top:40px">아직 일정이 없어요.<br>일정을 만들면 순원들이 미리 참석 여부를 알릴 수 있어요.</div>`:""}`;
+}
+function viewCheck(){
+  const e = events().find(x=>x.id===openEvent);
+  const all = members(), o = count(e,"o"), x = count(e,"x");
+  const list = checkFilter==="o" ? all.filter(m=>e.marks[m.id]==="o") : checkFilter==="x" ? all.filter(m=>e.marks[m.id]==="x") : all;
+  const fbtn = (v,l,n)=> `<button class="${checkFilter===v?"on":""}" data-act="checkFilter" data-v="${v}">${l} ${n}</button>`;
+  const ry = all.filter(m=>e.rsvp[m.id]==="yes").length, rn = all.filter(m=>e.rsvp[m.id]==="no").length;
+  return `
+    <button class="back" data-act="back">‹ 일정 목록</button>
+    ${editingEvent ? eventForm(e) : `<div class="evhead"><div class="t">${esc(e.title)}</div><div class="sub">${dLabel(e.date)}${e.time?" · "+tLabel(e.time):""}</div></div>`}
+    <div class="summary">
+      <div class="stat yes"><div class="n">${o}</div><div class="l">출석</div></div>
+      <div class="stat no"><div class="n">${x}</div><div class="l">결석</div></div>
+      <div class="stat"><div class="n">${all.length-o-x}</div><div class="l">미체크</div></div>
+    </div>
+    ${ry+rn ? `<div class="sub" style="text-align:center;margin-top:8px">순원 예고: 참석 ${ry}명 · 불참 ${rn}명</div>` : ""}
+    <div class="sorter"><h2>출석체크</h2>${all.length?`<div class="sortbtns">${fbtn("all","전체",all.length)}${fbtn("o","출석",o)}${fbtn("x","결석",x)}</div>`:""}</div>
+    ${all.length ? `
+    <div class="tools">
+      <button class="btn" data-act="restAbsent">남은 사람 모두 결석</button>
+      <button class="btn" data-act="applyRsvp">예고대로 체크</button>
+      <button class="btn" data-act="copy">카톡용 복사</button>
+    </div>
+    <div class="card">${list.length ? "" : `<div class="empty">${checkFilter==="o"?"아직 출석한 사람이 없어요.":"결석한 사람이 없어요."}</div>`}${list.map(m=>{ const absent = e.marks[m.id]==="x", reason = e.reasons[m.id]||"", open = absent && reasonOpen.has(m.id), rv = e.rsvp[m.id]; return `
+      <div class="row ${open?"has-reason":""}">
+        <div style="min-width:0">
+          <button class="name namelink" data-act="gotoMember" data-id="${m.id}">${nameTag(m)}</button>
+          ${rv && !e.marks[m.id] ? `<div><span class="rsvp-badge ${rv}">예고: ${rv==="yes"?"참석":"불참"}${rv==="no"&&e.rsvpReason[m.id]?` · ${esc(e.rsvpReason[m.id])}`:""}</span></div>` : ""}
+          ${absent && reason && !open ? `<div class="reason-inline">사유: ${esc(reason)}</div>` : ""}
+        </div>
+        <div class="marks">
+          ${absent ? `<button class="mk reason-mk ${reason?"has":""}" data-act="reasonOpen" data-id="${m.id}">${reason?"사유":"+사유"}</button>` : ""}
+          <button class="mk yes ${e.marks[m.id]==="o"?"on":""}" data-act="mark" data-id="${m.id}" data-v="o">출석</button>
+          <button class="mk no ${absent?"on":""}" data-act="mark" data-id="${m.id}" data-v="x">결석</button>
+        </div>
+      </div>
+      ${open ? `<div class="reason-row"><input data-reason="${m.id}" data-field="reasons" value="${esc(reason)}" maxlength="60" placeholder="결석 사유 (예: 출장, 아파서)" enterkeyhint="done"></div>` : ""}`; }).join("")}</div>`
+    : `<div class="card"><div class="empty">순원이 없어요. 아래에서 바로 추가할 수 있어요.</div></div>`}
+    <div class="add"><input id="addName" placeholder="순원 추가 (쉼표로 여러 명)" maxlength="60"><button class="btn primary" data-act="addMember">추가</button></div>
+    <div class="tools" style="margin-top:20px">${editingEvent?"":`<button class="btn" data-act="editEvent">일정 수정</button>`}<button class="btn danger" data-act="deleteEvent">일정 삭제</button></div>`;
+}
+
+/* ---------- 순장: 순원 ---------- */
+function viewMembers(){
+  const { list, st } = sortedMembers();
+  return `
+    <div class="add"><input id="addName" placeholder="이름 (쉼표로 여러 명: 홍길동, 김하늘)" maxlength="60"><button class="btn primary" data-act="addMember">추가</button></div>
+    <div class="sub" style="margin:0 4px">순원이 카카오로 로그인해서 자기 이름을 고르면 <span class="linked">카톡</span> 표시가 붙어요.</div>
+    <div class="sorter"><h2>순원 ${list.length}명</h2>${sortToggle()}</div>
+    <div class="card">${list.map(m=> editingMember===m.id ? `
+      <div style="padding:12px 0;border-bottom:1px solid var(--line)">
+        <div class="field"><label>이름 · 성별</label>
+          <div style="display:flex;gap:6px">
+            <input id="eName" value="${esc(m.name)}" maxlength="12" style="flex:1">
+            <div class="seg" id="eGender" data-v="${m.gender||""}" style="flex:0 0 112px">
+              <button type="button" class="${m.gender==="m"?"on":""}" data-act="pickGender" data-v="m">남</button>
+              <button type="button" class="${m.gender==="f"?"on":""}" data-act="pickGender" data-v="f">여</button>
+            </div>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>생일 (YYMMDD)</label><input id="eBday" value="${esc(bdayInput(m))}" inputmode="numeric" maxlength="6" placeholder="예: 900314"></div>
+          <div class="field"><label>전화번호</label><input id="ePhone" type="tel" value="${esc(m.phone||"")}" placeholder="010-0000-0000"></div>
+        </div>
+        <div class="field"><label>순장 메모 (순원에게 보이지 않아요)</label><textarea id="eMemo" class="memo-in" maxlength="300" placeholder="기도제목, 근황 등">${esc(m.memo||"")}</textarea></div>
+        ${m.kakaoId ? `<button class="btn danger" style="margin-bottom:10px" data-act="unlinkMember" data-id="${m.id}">카카오 연결 해제</button>` : ""}
+        <div style="display:flex;gap:8px"><button class="btn" style="flex:1" data-act="cancelMember">취소</button><button class="btn primary" style="flex:2" data-act="saveMember" data-id="${m.id}">저장</button></div>
+      </div>` : `
+      <div class="mrow" id="mem-${m.id}">
+        <div class="top">
+          <div class="who">
+            <div class="name">${nameTag(m)}${m.kakaoId?`<span class="linked">카톡</span>`:""}</div>
+            ${st[m.id].t ? `<span class="attcount">출석 ${st[m.id].n}/${st[m.id].t}</span>` : ""}
+            ${m.phone ? `<span class="divider" aria-hidden="true"></span><a class="sbtn2 call icon" href="tel:${telDigits(m.phone)}" aria-label="전화 걸기">${ICON_PHONE}</a><a class="sbtn2 call icon" href="sms:${telDigits(m.phone)}" aria-label="문자 보내기">${ICON_SMS}</a>` : ""}
+          </div>
+          <div class="acts">
+            <button class="sbtn2" data-act="memoEdit" data-id="${m.id}">메모</button>
+            <button class="sbtn2" data-act="editMember" data-id="${m.id}">수정</button>
+            <button class="sbtn2 danger" data-act="deleteMember" data-id="${m.id}">삭제</button>
+          </div>
+        </div>
+        ${bdayLine(m)}
+        ${m.memo ? `<div class="memo"><span>${esc(m.memo)}</span><button class="memo-x" data-act="memoDelete" data-id="${m.id}" aria-label="메모 삭제">×</button></div>` : ""}
+        ${m.selfMemo ? `<div class="selfmemo"><b>본인이 남긴 메모</b>${esc(m.selfMemo)}</div>` : ""}
+      </div>`).join("") || `<div class="empty">아직 순원이 없어요.</div>`}</div>`;
+}
+
+/* ---------- 순장: 기록 ---------- */
+function viewStats(){
+  const evs = events().filter(e=>Object.keys(e.marks).length), { list } = sortedMembers();
+  if (!evs.length) return `<div class="empty" style="padding-top:60px">아직 체크한 일정이 없어요.</div>`;
+  const stat = m => { const n = evs.filter(e=>e.marks[m.id]==="o").length, t = evs.filter(e=>e.marks[m.id]).length; return { n, t, r: t?Math.round(n/t*100):0 }; };
+  const avg = Math.round(evs.reduce((a,e)=>a+count(e,"o"),0)/evs.length*10)/10;
+  return `
+    <div class="summary">
+      <div class="stat"><div class="n">${evs.length}</div><div class="l">체크한 일정</div></div>
+      <div class="stat yes"><div class="n">${avg}</div><div class="l">평균 출석 인원</div></div>
+      <div class="stat"><div class="n">${list.length}</div><div class="l">순원</div></div>
+    </div>
+    <div class="sorter"><h2>순원별 출석률</h2>${sortToggle()}</div>
+    <div class="card">${list.map(m=>{ const s=stat(m); return `
+      <div class="row" style="display:block">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span class="name" style="font-size:15px">${nameTag(m)}</span><span class="sub">${s.n}/${s.t} · ${s.r}%</span></div>
+        <div class="bar"><i style="width:${s.r}%"></i></div>
+      </div>`; }).join("")}</div>
+    <h2>일정별 출석</h2>
+    <div class="card">${evs.map(e=>`<div class="row click" data-act="open" data-id="${e.id}"><div><div class="name" style="font-size:15px">${esc(e.title)}</div><div class="sub">${dLabel(e.date)}</div></div><div class="sub">출석 ${count(e,"o")} · 결석 ${count(e,"x")}</div></div>`).join("")}</div>`;
+}
+
+/* ---------- 순원: 일정 · 내 기록 · 내 정보 ---------- */
+function viewMyEvents(){
+  const me = myMember(), t = today(), list = events();
+  const upcoming = list.filter(e=>e.date>=t).reverse(), past = list.filter(e=>e.date<t).slice(0,10);
+  const card = e => { const rv = e.rsvp[me.id], rr = e.rsvpReason[me.id]||"", open = rv==="no" && reasonOpen.has(me.id+"_"+e.id), mk = e.marks[me.id];
+    return `<div class="ecard ${e.date===t?"today":""}">
+      <div class="hrow"><div><div class="t">${esc(e.title)}</div><div class="sub">${dLabel(e.date)}${e.time?" · "+tLabel(e.time):""}</div></div>${e.date===t?`<span class="pill today">오늘</span>`:""}</div>
+      ${mk ? `<div style="margin-top:10px"><span class="rsvp-badge ${mk==="o"?"yes":"no"}">순장 체크: ${mk==="o"?"출석":"결석"}</span></div>` : `
+      <div class="rsvp">
+        <button class="rbtn yes ${rv==="yes"?"on":""}" data-act="rsvp" data-id="${e.id}" data-v="yes">참석할게요</button>
+        <button class="rbtn no ${rv==="no"?"on":""}" data-act="rsvp" data-id="${e.id}" data-v="no">참석 어려워요</button>
+      </div>
+      ${rv==="no" ? (open
+        ? `<div class="reason-row" style="padding-top:10px;border:0"><input data-reason="${me.id}" data-field="rsvpReason" data-eid="${e.id}" value="${esc(rr)}" maxlength="60" placeholder="사유 (예: 출장, 가족 일정)" enterkeyhint="done"></div>`
+        : rr ? `<div class="reason-text" style="margin-top:10px"><span>사유: ${esc(rr)}</span><button class="link" data-act="rsvpReasonOpen" data-id="${e.id}">수정</button></div>`
+             : `<button class="reason-btn" style="margin-top:10px" data-act="rsvpReasonOpen" data-id="${e.id}">+ 사유 입력</button>`) : ""}`}
+    </div>`; };
+  return `
+    <h2>다가오는 일정</h2>
+    ${upcoming.length ? upcoming.map(card).join("") : `<div class="card"><div class="empty">예정된 일정이 없어요.</div></div>`}
+    ${past.length ? `<h2>지난 일정</h2><div class="card">${past.map(e=>{ const mk=e.marks[me.id]; return `<div class="row"><div><div class="name" style="font-size:15px">${esc(e.title)}</div><div class="sub">${dLabel(e.date)}</div></div><span class="pill ${mk==="o"?"done":""}" style="${mk==="x"?"background:var(--no-soft);color:var(--no)":""}">${mk==="o"?"출석":mk==="x"?"결석":"기록 없음"}</span></div>`; }).join("")}</div>` : ""}`;
+}
+function viewMyStats(){
+  const me = myMember(), s = attStat(me.id), evs = events().filter(e=>e.marks[me.id]);
+  const rsvpN = events().filter(e=>e.rsvp[me.id]).length;
+  return `
+    <div class="summary">
+      <div class="stat yes"><div class="n">${s.t?Math.round(s.r*100):0}%</div><div class="l">출석률</div></div>
+      <div class="stat"><div class="n">${s.n}<span style="font-size:14px;color:var(--sub)">/${s.t}</span></div><div class="l">출석 횟수</div></div>
+      <div class="stat"><div class="n">${rsvpN}</div><div class="l">미리 알린 횟수</div></div>
+    </div>
+    <h2>일정별 기록</h2>
+    <div class="card">${evs.map(e=>{ const mk=e.marks[me.id]; return `<div class="row"><div><div class="name" style="font-size:15px">${esc(e.title)}</div><div class="sub">${dLabel(e.date)}${mk==="x"&&e.reasons[me.id]?` · 사유: ${esc(e.reasons[me.id])}`:""}</div></div><span class="pill ${mk==="o"?"done":""}" style="${mk==="x"?"background:var(--no-soft);color:var(--no)":""}">${mk==="o"?"출석":"결석"}</span></div>`; }).join("") || `<div class="empty">아직 기록이 없어요.</div>`}</div>`;
+}
+function viewMyInfo(){
+  const m = myMember();
+  return `
+    <div class="form" style="margin-top:16px">
+      <div class="field"><label>이름 · 성별</label>
+        <div style="display:flex;gap:6px">
+          <input value="${esc(m.name)}" disabled style="flex:1;color:var(--sub)">
+          <div class="seg" id="eGender" data-v="${m.gender||""}" style="flex:0 0 112px">
+            <button type="button" class="${m.gender==="m"?"on":""}" data-act="pickGender" data-v="m">남</button>
+            <button type="button" class="${m.gender==="f"?"on":""}" data-act="pickGender" data-v="f">여</button>
+          </div>
+        </div>
+        <div class="sub" style="font-size:12px">이름은 순장님만 바꿀 수 있어요.</div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>생일 (YYMMDD)</label><input id="eBday" value="${esc(bdayInput(m))}" inputmode="numeric" maxlength="6" placeholder="예: 900314"></div>
+        <div class="field"><label>전화번호</label><input id="ePhone" type="tel" value="${esc(m.phone||"")}" placeholder="010-0000-0000"></div>
+      </div>
+      <div class="field"><label>순장님께 남길 메모</label><textarea id="eSelfMemo" class="memo-in" maxlength="300" placeholder="기도제목, 근황 등">${esc(m.selfMemo||"")}</textarea></div>
+      <button class="btn primary" style="width:100%;padding:12px" data-act="saveMyInfo">저장</button>
+    </div>
+    <button class="btn" style="width:100%;padding:12px;margin-top:16px" data-act="logout">로그아웃 (다른 카카오 계정으로 로그인)</button>
+    <button class="btn danger" style="width:100%;padding:12px;margin-top:8px;border:0;background:none" data-act="unlinkSelf">카카오 연결 끊기 (탈퇴)</button>`;
+}
+function renderProfile(){
+  openModal(`
+    <h3>${esc(store.leaders[user.id]?.name || "순장")}</h3>
+    <div class="sub" style="margin-bottom:16px">순장 · ${esc(CONFIG.GROUP_NAME)}</div>
+    <button class="btn" style="width:100%;padding:12px;margin-bottom:8px" data-act="logout">로그아웃 (다른 카카오 계정으로 로그인)</button>
+    <button class="btn danger" style="width:100%;padding:12px;border:0;background:none" data-act="leaveLeader">순장 권한 내려놓기</button>
+    ${DEMO?`<button class="btn danger" style="width:100%;padding:12px;margin-top:8px" data-act="resetDemo">데모 데이터 초기화</button>`:""}`);
+}
+
+/* ---------- 동작 ---------- */
+async function addMembers(){
+  const input = document.getElementById("addName");
+  const names = input.value.split(/[,，\n]/).map(clean).filter(Boolean);
+  if (!names.length) return toast("이름을 입력해 주세요");
+  const exists = new Set(members().map(m=>m.name)); let added = 0;
+  for (const n of names){ if (exists.has(n)) continue; exists.add(n); await put("members", newId("m_"), { name:n, kakaoId:"", createdAt:Date.now() }); added++; }
+  toast(added ? `${added}명 추가했어요` : "이미 있는 이름이에요");
+  document.getElementById("addName")?.focus();
+}
+function readEventForm(){
+  const date = document.getElementById("f_date").value, title = clean(document.getElementById("f_title").value);
+  if (!date || !title) { toast("날짜와 일정 이름을 입력해 주세요"); return null; }
+  return { date, time: document.getElementById("f_time").value, title };
+}
+function readInfo(){
+  const bd = parseBday(document.getElementById("eBday").value);
+  if (bd===null){ toast("생일은 900314처럼 숫자 6자리(YYMMDD)로 적어 주세요"); return null; }
+  return { ...bd, phone: fmtPhone(document.getElementById("ePhone").value), gender: document.getElementById("eGender").dataset.v || "" };
+}
+
+document.addEventListener("click", async ev=>{
+  const t = ev.target.closest("[data-tab]");
+  if (t){ tab=t.dataset.tab; openEvent=null; showForm=false; editingMember=null; editingEvent=false; reasonOpen.clear(); render(); window.scrollTo(0,0); return; }
+  const b = ev.target.closest("[data-act]"); if(!b) return;
+  const { act, id, v } = b.dataset;
+  try{
+    switch(act){
+      case "login": return login(v);
+      case "logout": return logout();
+      case "profile": return isLeader() ? renderProfile() : (tab="mInfo", render());
+      // 처음 로그인
+      case "obRole": onboardRole=v; onboardErr=""; newName=false; return onboard();
+      case "obList": newName=false; return onboard();
+      case "obNewMode": newName=true; return onboard();
+      case "obPick": {
+        const m = store.members[id]; if (m.kakaoId) { onboardErr="이미 다른 계정과 연결된 이름이에요"; return onboard(); }
+        if (!confirm(`'${m.name}'님이 맞나요?`)) return;
+        await put("members", id, { kakaoId:user.id }); closeModal(); toast(`${m.name}님, 환영해요!`); return render();
+      }
+      case "obNew": {
+        const n = clean(document.getElementById("ob_name").value); if (!n){ onboardErr="이름을 입력해 주세요"; return onboard(); }
+        const same = members().find(m=>m.name===n && !m.kakaoId);
+        if (same){ await put("members", same.id, { kakaoId:user.id }); }
+        else await put("members", newId("m_"), { name:n, kakaoId:user.id, createdAt:Date.now() });
+        closeModal(); toast(`${n}님, 환영해요!`); return render();
+      }
+      case "obLeader": {
+        const n = clean(document.getElementById("ob_name").value), pw = document.getElementById("ob_pw").value;
+        if (!n){ onboardErr="이름을 입력해 주세요"; return onboard(); }
+        if (!CONFIG.LEADER_PASSWORD || pw !== CONFIG.LEADER_PASSWORD){ onboardErr="비밀번호가 맞지 않아요"; return onboard(); }
+        await put("leaders", user.id, { name:n }); closeModal(); toast("순장으로 시작해요"); render(); return birthdayToasts();
+      }
+      case "leaveLeader": { if (!confirm("순장 권한을 내려놓을까요? 다시 하려면 순장 비밀번호가 필요해요.")) return; closeModal(); return drop("leaders", user.id); }
+      case "resetDemo": localStorage.removeItem("v2_demo"); localStorage.removeItem("v2_demo_user"); location.reload(); return;
+      // 순장: 일정
+      case "newEvent": showForm=true; return render();
+      case "closeForm": showForm=false; return render();
+      case "createEvent": { const data = readEventForm(); if (!data) return; const eid = newId("e_"); showForm=false; openEvent=eid; checkFilter="all";
+        await put("events", eid, { ...data, marks:{}, createdAt:Date.now() }); window.scrollTo(0,0); return toast("일정을 만들었어요"); }
+      case "open": openEvent=id; tab="events"; editingEvent=false; checkFilter="all"; render(); return window.scrollTo(0,0);
+      case "back": openEvent=null; editingEvent=false; reasonOpen.clear(); return render();
+      case "editEvent": editingEvent=true; return render();
+      case "cancelEditEvent": editingEvent=false; return render();
+      case "saveEvent": { const data = readEventForm(); if (!data) return; editingEvent=false; await put("events", openEvent, data); return toast("저장했어요"); }
+      case "deleteEvent": { if (!confirm("이 일정과 출석 기록을 삭제할까요?")) return; const eid=openEvent; openEvent=null; editingEvent=false; await drop("events", eid); return toast("삭제했어요"); }
+      case "checkFilter": checkFilter=v; return render();
+      case "mark": {
+        const e = store.events[openEvent], cur = (e.marks||{})[id], next = cur===v ? null : v;
+        if (next!=="x"){ reasonOpen.delete(id); if ((e.reasons||{})[id]) await setEv(openEvent, "reasons", id, "", true); }
+        return setEv(openEvent, "marks", id, next);
+      }
+      case "reasonOpen": { reasonOpen.add(id); render(); const i=document.querySelector(`[data-reason="${id}"]`); if (i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length); } return; }
+      case "restAbsent": { const marks = store.events[openEvent].marks||{}, rest = members().filter(m=>!marks[m.id]);
+        if (!rest.length) return toast("남은 사람이 없어요"); for (const m of rest) await setEv(openEvent, "marks", m.id, "x", true); render(); return toast(`${rest.length}명을 결석으로 체크했어요`); }
+      case "applyRsvp": {   // 순원 예고를 출석/결석 체크로 옮김 (이미 체크한 사람은 그대로)
+        const e = store.events[openEvent], marks = e.marks||{}, rs = e.rsvp||{}, rr = e.rsvpReason||{}; let n = 0;
+        for (const m of members()){ if (marks[m.id] || !rs[m.id]) continue; await setEv(openEvent, "marks", m.id, rs[m.id]==="yes"?"o":"x", true); if (rs[m.id]==="no" && rr[m.id]) await setEv(openEvent, "reasons", m.id, rr[m.id], true); n++; }
+        render(); return toast(n ? `예고한 ${n}명을 체크했어요` : "옮길 예고가 없어요");
+      }
+      case "copy": {
+        const e = events().find(x=>x.id===openEvent), list = members();
+        const yes = list.filter(m=>e.marks[m.id]==="o").map(m=>m.name), no = list.filter(m=>e.marks[m.id]==="x").map(m=> e.reasons[m.id] ? `${m.name}(${e.reasons[m.id]})` : m.name);
+        const text = `[${CONFIG.GROUP_NAME}] ${dLabel(e.date)} ${e.title}\n출석 ${yes.length}명: ${yes.join(", ")||"-"}\n결석 ${no.length}명: ${no.join(", ")||"-"}`;
+        if (navigator.share){ try{ await navigator.share({ text }); return; }catch(_){ } }
+        await navigator.clipboard.writeText(text); return toast("복사했어요. 단톡방에 붙여넣으세요");
+      }
+      // 순장: 순원
+      case "addMember": return addMembers();
+      case "sortMembers": memberSort=v; localStorage.setItem("v2_member_sort", v); return render();
+      case "gotoMember": { tab="members"; editingMember=null; render(); const el=document.getElementById("mem-"+id); if (el){ el.scrollIntoView({block:"center",behavior:"smooth"}); el.classList.add("flash"); } return; }
+      case "editMember": editingMember=id; return render();
+      case "cancelMember": editingMember=null; return render();
+      case "pickGender": { const g=document.getElementById("eGender"); const nv = g.dataset.v===v ? "" : v; g.dataset.v=nv; g.querySelectorAll("button").forEach(x=>x.classList.toggle("on", x.dataset.v===nv)); return; }
+      case "memoEdit": { editingMember=id; tab="members"; render(); const t2=document.getElementById("eMemo"); if (t2){ t2.focus(); t2.setSelectionRange(t2.value.length,t2.value.length); t2.scrollIntoView({block:"center"}); } return; }
+      case "memoDelete": { if (!confirm(`${store.members[id].name}님 메모를 지울까요?`)) return; await put("members", id, { memo:"" }); return toast("메모를 지웠어요"); }
+      case "saveMember": {
+        const name = clean(document.getElementById("eName").value); if(!name) return toast("이름을 입력해 주세요");
+        const info = readInfo(); if (!info) return;
+        editingMember=null; await put("members", id, { name, ...info, memo: document.getElementById("eMemo").value.trim() }); return toast("저장했어요");
+      }
+      case "unlinkMember": { if (!confirm("이 순원의 카카오 연결을 해제할까요? (기록은 그대로 남아요)")) return; editingMember=null; await put("members", id, { kakaoId:"" }); return toast("연결을 해제했어요"); }
+      case "deleteMember": { if (!confirm(`${store.members[id].name}님을 순원 명단에서 지울까요? 지난 출석 기록에서도 빠져요.`)) return; await drop("members", id); return toast("지웠어요"); }
+      case "contact": return;
+      // 순원
+      case "rsvp": {
+        const me = myMember(), cur = (store.events[id].rsvp||{})[me.id], next = cur===v ? null : v;
+        if (next!=="no"){ reasonOpen.delete(me.id+"_"+id); if ((store.events[id].rsvpReason||{})[me.id]) await setEv(id, "rsvpReason", me.id, "", true); }
+        await setEv(id, "rsvp", me.id, next);
+        return toast(!next ? "응답을 취소했어요" : next==="yes" ? "참석으로 알렸어요" : "참석이 어렵다고 알렸어요");
+      }
+      case "rsvpReasonOpen": { const me = myMember(); reasonOpen.add(me.id+"_"+id); render(); const i=document.querySelector(`[data-eid="${id}"]`); if (i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length); } return; }
+      case "saveMyInfo": { const info = readInfo(); if (!info) return; await put("members", myMember().id, { ...info, selfMemo: document.getElementById("eSelfMemo").value.trim() }); return toast("저장했어요"); }
+      case "unlinkSelf": { if (!confirm("카카오 연결을 끊을까요? 출석 기록은 순장님 명단에 그대로 남아요.")) return; const me = myMember(); await put("members", me.id, { kakaoId:"", selfMemo:"" }); return logout(); }
+    }
+  }catch(e){ console.error(e); toast("저장 중 오류가 났어요"); }
+});
+document.addEventListener("change", async e=>{
+  const mid = e.target.dataset && e.target.dataset.reason; if (!mid) return;
+  const field = e.target.dataset.field, eid = e.target.dataset.eid || openEvent, val = clean(e.target.value);
+  try{
+    reasonOpen.delete(field==="rsvpReason" ? mid+"_"+eid : mid);
+    await setEv(eid, field, mid, val); render(); if (val) toast("사유를 저장했어요");
+  }catch(err){ console.error(err); toast("저장 중 오류가 났어요"); }
+});
+document.addEventListener("keydown", e=>{
+  if (e.key!=="Enter") return;
+  if (e.target.dataset && e.target.dataset.reason){ e.target.blur(); return; }
+  if (e.target.id==="addName") addMembers();
+  if (["eName","eBday","ePhone"].includes(e.target.id)) document.querySelector('[data-act="saveMember"],[data-act="saveMyInfo"]')?.click();
+  if (e.target.id==="ob_name" || e.target.id==="ob_pw") document.querySelector('[data-act="obNew"],[data-act="obLeader"]')?.click();
+});
+
+/* ---------- 시작 ---------- */
+async function start(){ render(); birthdayToasts(); }
+await initAuth();
+await initData();
+ready = true;
+start();
+</script>
+</body>
+</html>
