@@ -64,6 +64,16 @@
   .lock h1{font-size:24px;margin:0 0 8px}
   .lock p{color:var(--sub);margin:0 0 24px}
   .lock input{width:100%;border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center;font-size:18px;background:#fff;margin-bottom:10px}
+  .info{font-size:13px;color:var(--sub);margin-top:3px;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+  .tel{color:var(--yes);font-weight:600;text-decoration:none;border:0;background:none;padding:0;font-size:13px}
+  .bday-soon{background:#fdf1d8;color:#8a5a00;font-weight:700;border-radius:999px;padding:2px 8px;font-size:12px}
+  .bdays{background:#fff8e8;border:1px solid #f1dfb4;border-radius:14px;padding:12px 14px;margin-top:14px}
+  .bdays b{display:block;font-size:13px;color:#8a5a00;margin-bottom:6px}
+  .bdays div{font-size:14px;padding:3px 0}
+  .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:20;display:none;align-items:flex-end;justify-content:center}
+  .sheet-bg.open{display:flex}
+  .sheet{background:var(--bg);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:20px 16px 28px}
+  .sheet a{display:block;text-align:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:15px 0;margin-bottom:8px;font-weight:700;color:var(--ink);text-decoration:none;font-size:16px}
   .demo{font-size:12px;color:var(--sub);background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:14px;line-height:1.5}
 </style>
 </head>
@@ -78,6 +88,7 @@
 </header>
 <div class="wrap" id="app"><div class="loading">불러오는 중…</div></div>
 <div class="toast" id="toast"></div>
+<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet"></div></div>
 
 <script type="module">
 /* =========================================================
@@ -143,7 +154,54 @@ const tLabel = t=>{ if(!t) return ""; let [h,m]=t.split(":").map(Number); const 
 const esc = s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const clean = v=>String(v||"").trim().replace(/\s+/g," ");
 const newId = p=> p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-function toast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),1600); }
+function toast(m, ms=1600){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),ms); }
+/* 생일: "MM-DD"로 저장. 3/14, 3-14, 3월 14일, 1990-03-14 모두 입력 가능 */
+function parseBday(v){
+  v = String(v||"").trim(); if (!v) return "";
+  const n = v.match(/\d+/g); if (!n) return null;
+  let m, d;
+  if (n.length>=3 && n[0].length===4){ m=+n[1]; d=+n[2]; }
+  else if (n.length>=2){ m=+n[0]; d=+n[1]; }
+  else if (n[0].length===4){ m=+n[0].slice(0,2); d=+n[0].slice(2); }
+  else return null;
+  if (!(m>=1&&m<=12&&d>=1&&d<=31)) return null;
+  return `${pad(m)}-${pad(d)}`;
+}
+const bdayLabel = b => { const [m,d]=b.split("-").map(Number); return `${m}월 ${d}일`; };
+function daysToBday(b){
+  if (!b) return null;
+  const [m,d] = b.split("-").map(Number), now = new Date(), t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let next = new Date(now.getFullYear(), m-1, d); if (next < t0) next = new Date(now.getFullYear()+1, m-1, d);
+  return Math.round((next - t0)/86400000);
+}
+const ddayText = n => n===0 ? "오늘 생일 🎉" : `생일 D-${n}`;
+const telDigits = v => String(v||"").replace(/[^\d+]/g,"");
+function fmtPhone(v){
+  const d = telDigits(v);
+  if (/^01\d{8,9}$/.test(d)) return d.length===10 ? `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}` : `${d.slice(0,3)}-${d.slice(3,7)}-${d.slice(7)}`;
+  return String(v||"").trim();
+}
+function memberInfo(m){
+  const parts = [];
+  if (m.bday){ const n = daysToBday(m.bday); parts.push(n<=7 ? `<span class="bday-soon">🎂 ${bdayLabel(m.bday)} · ${ddayText(n)}</span>` : `<span>🎂 ${bdayLabel(m.bday)}</span>`); }
+  if (m.phone) parts.push(`<button class="tel" data-act="contact" data-id="${m.id}">📞 ${esc(fmtPhone(m.phone))}</button>`);
+  return parts.length ? `<div class="info">${parts.join("")}</div>` : "";
+}
+const upcomingBdays = ()=> members().filter(m=>m.bday).map(m=>({...m, dd:daysToBday(m.bday)})).filter(m=>m.dd<=7).sort((a,b)=>a.dd-b.dd);
+function birthdayToasts(){
+  const key = "simple_bday_seen_" + today();
+  const seen = new Set(JSON.parse(localStorage.getItem(key) || "[]"));
+  const msgs = [];
+  upcomingBdays().forEach(m=>{
+    if (![7,3,1,0].includes(m.dd) || seen.has(m.id)) return;
+    seen.add(m.id);
+    msgs.push(m.dd===0 ? `🎉 오늘은 ${m.name}님 생일이에요!` : `🎂 ${m.name}님 생일이 ${m.dd}일 남았어요 (${bdayLabel(m.bday)})`);
+  });
+  localStorage.setItem(key, JSON.stringify([...seen]));
+  msgs.forEach((msg,i)=> setTimeout(()=>toast(msg, 3200), 600 + i*3600));
+}
+const $sheetBg = document.getElementById("sheetBg");
+$sheetBg.addEventListener("click", e=>{ if (e.target===$sheetBg) $sheetBg.classList.remove("open"); });
 const members = ()=> Object.entries(store.members).map(([id,m])=>({id,...m})).sort((a,b)=>a.name.localeCompare(b.name,"ko"));
 const events = ()=> Object.entries(store.events).map(([id,e])=>({id,...e,marks:e.marks||{}}))
   .sort((a,b)=> (b.date+(b.time||"")).localeCompare(a.date+(a.time||"")));
@@ -200,6 +258,7 @@ function viewEvents(){
   const upcoming = list.filter(e=>e.date>=t).reverse(), past = list.filter(e=>e.date<t);
   return `
     ${showForm ? eventForm() : `<button class="big" data-act="newEvent">+ 일정 추가</button>`}
+    ${upcomingBdays().length ? `<div class="bdays"><b>🎂 다가오는 생일 (7일 이내)</b>${upcomingBdays().map(m=>`<div>${esc(m.name)} · ${bdayLabel(m.bday)} · <strong>${m.dd===0?"오늘!":"D-"+m.dd}</strong></div>`).join("")}</div>` : ""}
     ${!members().length ? `<div class="demo">먼저 <b>순원</b> 탭에서 순원을 추가해 주세요.</div>` : ""}
     ${upcoming.length?`<h2>예정·오늘</h2><div class="card">${upcoming.map(row).join("")}</div>`:""}
     ${past.length?`<h2>지난 일정</h2><div class="card">${past.map(row).join("")}</div>`:""}
@@ -230,7 +289,7 @@ function viewCheck(){
     </div>
     <div class="card">${list.map(m=>`
       <div class="row">
-        <div class="name">${esc(m.name)}</div>
+        <div><div class="name">${esc(m.name)}</div>${memberInfo(m)}</div>
         <div class="marks">
           <button class="mk yes ${e.marks[m.id]==="o"?"on":""}" data-act="mark" data-id="${m.id}" data-v="o">출석</button>
           <button class="mk no ${e.marks[m.id]==="x"?"on":""}" data-act="mark" data-id="${m.id}" data-v="x">결석</button>
@@ -255,12 +314,19 @@ function viewMembers(){
     </div>
     <h2>순원 ${list.length}명</h2>
     <div class="card">${list.map(m=> editingMember===m.id ? `
-      <div class="row">
-        <div class="add" style="margin:0;flex:1"><input id="eName" value="${esc(m.name)}" maxlength="12"></div>
-        <div class="marks"><button class="btn primary" data-act="saveMember" data-id="${m.id}">저장</button></div>
+      <div style="padding:12px 0;border-bottom:1px solid var(--line)">
+        <div class="field"><label>이름</label><input id="eName" value="${esc(m.name)}" maxlength="12"></div>
+        <div class="grid2">
+          <div class="field"><label>생일 (예: 3/14)</label><input id="eBday" value="${m.bday?esc(m.bday.replace("-","/")):""}" inputmode="numeric" placeholder="월/일"></div>
+          <div class="field"><label>전화번호</label><input id="ePhone" type="tel" value="${esc(m.phone||"")}" placeholder="010-0000-0000"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn" style="flex:1" data-act="cancelMember">취소</button>
+          <button class="btn primary" style="flex:2" data-act="saveMember" data-id="${m.id}">저장</button>
+        </div>
       </div>` : `
       <div class="row">
-        <div class="name">${esc(m.name)}</div>
+        <div><div class="name">${esc(m.name)}</div>${memberInfo(m)}</div>
         <div class="marks">
           <button class="btn" data-act="editMember" data-id="${m.id}">수정</button>
           <button class="btn danger" data-act="deleteMember" data-id="${m.id}">삭제</button>
@@ -322,7 +388,7 @@ document.addEventListener("click", async ev=>{
     switch(act){
       case "unlock": {
         if (document.getElementById("pass").value !== CONFIG.PASSCODE) return toast("비밀번호가 맞지 않아요");
-        localStorage.setItem("simple_unlocked", CONFIG.PASSCODE); return render();
+        localStorage.setItem("simple_unlocked", CONFIG.PASSCODE); render(); return birthdayToasts();
       }
       case "newEvent": showForm=true; return render();
       case "closeForm": showForm=false; return render();
@@ -359,8 +425,23 @@ document.addEventListener("click", async ev=>{
       case "editMember": editingMember=id; return render();
       case "saveMember": {
         const name = clean(document.getElementById("eName").value); if(!name) return toast("이름을 입력해 주세요");
-        editingMember=null; await put("simple_members","members", id, { name }); return toast("저장했어요");
+        const bday = parseBday(document.getElementById("eBday").value);
+        if (bday===null) return toast("생일은 3/14처럼 월/일로 적어 주세요");
+        const phone = fmtPhone(document.getElementById("ePhone").value);
+        editingMember=null; await put("simple_members","members", id, { name, bday, phone }); return toast("저장했어요");
       }
+      case "cancelMember": editingMember=null; return render();
+      case "contact": {
+        const m = store.members[id], num = telDigits(m.phone);
+        document.getElementById("sheet").innerHTML = `
+          <div style="text-align:center;font-weight:800;font-size:18px">${esc(m.name)}</div>
+          <div style="text-align:center;color:var(--sub);margin:4px 0 16px">${esc(fmtPhone(m.phone))}</div>
+          <a href="tel:${num}">📞 전화 걸기</a>
+          <a href="sms:${num}">💬 문자 보내기</a>
+          <a href="#" data-act="closeSheet" style="color:var(--sub)">닫기</a>`;
+        $sheetBg.classList.add("open"); return;
+      }
+      case "closeSheet": ev.preventDefault(); $sheetBg.classList.remove("open"); return;
       case "deleteMember": {
         if (!confirm(`${store.members[id].name}님을 순원 명단에서 지울까요? 지난 출석 기록에서도 빠져요.`)) return;
         await drop("simple_members","members", id); return toast("지웠어요");
@@ -371,13 +452,14 @@ document.addEventListener("click", async ev=>{
 document.addEventListener("keydown", e=>{
   if (e.key!=="Enter") return;
   if (e.target.id==="addName") addMembers();
-  if (e.target.id==="eName") document.querySelector('[data-act="saveMember"]')?.click();
+  if (["eName","eBday","ePhone"].includes(e.target.id)) document.querySelector('[data-act="saveMember"]')?.click();
   if (e.target.id==="pass") document.querySelector('[data-act="unlock"]')?.click();
 });
 
 await initData();
 ready = true;
 render();
+if (!CONFIG.PASSCODE || localStorage.getItem("simple_unlocked") === CONFIG.PASSCODE) birthdayToasts();
 </script>
 </body>
 </html>
