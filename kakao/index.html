@@ -2,6 +2,8 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="theme-color" content="#05071f">
+<link rel="icon" href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%20225%22%20role%3D%22img%22%20aria-label%3D%22DW%22%3E%0A%20%20%3Cg%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%2234%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%0A%20%20%20%20%3Cpath%20d%3D%22M39%2029%20H108%20A83%2083%200%200%201%20108%20195%20H39%22/%3E%0A%20%20%20%20%3Cline%20x1%3D%22246%22%20y1%3D%22196%22%20x2%3D%22304%22%20y2%3D%2229%22/%3E%0A%20%20%20%20%3Cline%20x1%3D%22314%22%20y1%3D%22186%22%20x2%3D%22372%22%20y2%3D%2229%22/%3E%0A%20%20%3C/g%3E%0A%20%20%3Ccircle%20cx%3D%22218%22%20cy%3D%2234%22%20r%3D%2216%22%20fill%3D%22%23f4ee7a%22/%3E%0A%3C/svg%3E%0A">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>드림워십 순모임 출석체크 (카카오)</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
@@ -164,11 +166,63 @@
   body.readonly .edit-only, body.readonly .memo-x, body.readonly .reason-mk{display:none!important}
   body.readonly .mk{pointer-events:none}
   body.readonly .mk:not(.on){display:none}
+  /* ===== 드림워십 테마: 밤하늘 남색·보라 + 흰 선 + 노란 점 ===== */
+  :root{ --bg:#070a2b; --card:rgba(255,255,255,.07); --ink:#f3f4ff; --sub:#a9aedb; --line:rgba(255,255,255,.13);
+    --yes:#8b9bff; --yes-soft:rgba(139,155,255,.18); --no:#ff7f9d; --no-soft:rgba(255,127,157,.16); --acc:#f4ee7a; --navy:#0b1050; }
+  html{background:#05071f}
+  body{color:var(--ink);background:
+      radial-gradient(120% 55% at 15% 105%, rgba(70,80,255,.55), transparent 60%),
+      radial-gradient(90% 45% at 95% 100%, rgba(160,80,255,.45), transparent 60%),
+      linear-gradient(180deg,#04061a 0%, #0a0e45 55%, #1a1d8a 100%);
+    background-attachment:fixed; min-height:100vh}
+  header{background:rgba(5,7,31,.72)!important;border-bottom:1px solid var(--line)}
+  .brandrow{display:flex;align-items:center;gap:10px}
+  .brandrow img{height:26px;width:auto;flex:none}
+  .tab{color:var(--sub)} .tab.on{background:#fff;color:var(--navy)}
+  .card,.stat,.form,.ecard,.datebar input,.datebar button{background:var(--card)!important;border-color:var(--line)!important;backdrop-filter:blur(10px)}
+  .ecard.today{border:2px solid var(--acc)!important}
+  .row{border-bottom-color:var(--line)} .mrow{border-bottom-color:var(--line)}
+  .name,.namelink,.evhead .t,.stat .n{color:var(--ink)}
+  .stat.yes .n{color:var(--yes)} .stat.no .n{color:var(--no)}
+  .field input,.add input,textarea.memo-in,.lock input{background:rgba(255,255,255,.08)!important;border-color:var(--line)!important;color:var(--ink)}
+  .field input::placeholder,.add input::placeholder,textarea.memo-in::placeholder{color:#7d82b3}
+  .field input:disabled{color:var(--sub)!important}
+  input[type=date],input[type=time]{color-scheme:dark}
+  .btn,.sbtn2,.mk,.rbtn,.seg button,.pick,.rolepick button,.whoami{background:rgba(255,255,255,.08)!important;border-color:var(--line)!important;color:var(--ink)!important}
+  .btn.danger,.sbtn2.danger,.link.danger{color:var(--no)!important}
+  .sbtn2.call{color:var(--acc)!important}
+  .btn.primary,.big,.rolepick button.on,.seg button.on{background:var(--acc)!important;border-color:var(--acc)!important;color:var(--navy)!important}
+  .mk.yes.on,.rbtn.yes.on{background:var(--yes)!important;border-color:var(--yes)!important;color:#0b1050!important}
+  .mk.no.on,.rbtn.no.on{background:var(--no)!important;border-color:var(--no)!important;color:#2a0614!important}
+  .mk.reason-mk{border-color:rgba(255,127,157,.5)!important;color:var(--no)!important;background:transparent!important}
+  .mk.reason-mk.has{background:var(--no-soft)!important}
+  .reason-row input{background:var(--no-soft)!important;border-color:rgba(255,127,157,.35)!important;color:var(--ink)}
+  .reason-text{background:var(--no-soft)} .reason-btn{background:transparent!important;border-color:rgba(255,127,157,.5)!important}
+  .sortbtns{background:rgba(255,255,255,.07)!important} .sortbtns button{color:var(--sub)} .sortbtns button.on{background:#fff!important;color:var(--navy)!important}
+  .pill{background:rgba(255,255,255,.1);color:var(--sub)} .pill.today{background:var(--acc);color:var(--navy)} .pill.done{background:var(--yes-soft);color:var(--yes)}
+  .attcount{color:var(--yes)!important}
+  .memo{background:rgba(255,255,255,.07)!important;color:var(--ink)} .selfmemo{background:rgba(139,155,255,.14)!important;color:var(--ink)} .selfmemo b{color:var(--yes)}
+  .bdays{background:rgba(244,238,122,.1)!important;border-color:rgba(244,238,122,.3)!important} .bdays b{color:var(--acc)!important}
+  .bday-soon{background:rgba(244,238,122,.16)!important;color:var(--acc)!important}
+  .linked{background:rgba(244,238,122,.16)!important;color:var(--acc)!important}
+  .rsvp-badge.yes{background:var(--yes-soft);color:var(--yes)} .rsvp-badge.no{background:var(--no-soft);color:var(--no)}
+  .divider{background:var(--line)!important}
+  .bar{background:rgba(255,255,255,.1)} .bar i{background:linear-gradient(90deg,var(--yes),#b48cff)}
+  .gdot.f{background:#ff8fc0} .gdot.m{background:#7fb0ff}
+  .modal,.sheet{background:#0d1150!important;color:var(--ink);border-top:1px solid var(--line)}
+  .modal-bg,.sheet-bg{background:rgba(2,3,15,.6)}
+  .toast{background:#fff;color:var(--navy)}
+  .demo{background:rgba(255,255,255,.07)!important;border-color:var(--line)!important;color:var(--sub)}
+  .mrow.flash{animation:flash2 1.6s ease} @keyframes flash2{0%,40%{background:rgba(244,238,122,.18)}100%{background:transparent}}
+  .lock{margin-top:70px} .lock .biglogo{width:180px;height:auto;margin:0 auto 22px;display:block;filter:drop-shadow(0 6px 30px rgba(120,130,255,.45))}
+  .lock h1{color:#fff;letter-spacing:-.4px} .lock p{color:var(--sub)}
+  .kakao{background:#FEE500!important;color:#191919!important;border:0!important}
+  .loading{color:var(--sub)}
 </style>
 </head>
 <body>
 <header id="hdr" style="display:none">
-  <div class="hbar hrow"><div><span id="apptitle">출석체크</span><small id="subtitle"></small></div><button class="whoami" id="whoami" data-act="profile"></button></div>
+  <div class="hbar hrow"><div class="brandrow"><img src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%20225%22%20role%3D%22img%22%20aria-label%3D%22DW%22%3E%0A%20%20%3Cg%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%2234%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%0A%20%20%20%20%3Cpath%20d%3D%22M39%2029%20H108%20A83%2083%200%200%201%20108%20195%20H39%22/%3E%0A%20%20%20%20%3Cline%20x1%3D%22246%22%20y1%3D%22196%22%20x2%3D%22304%22%20y2%3D%2229%22/%3E%0A%20%20%20%20%3Cline%20x1%3D%22314%22%20y1%3D%22186%22%20x2%3D%22372%22%20y2%3D%2229%22/%3E%0A%20%20%3C/g%3E%0A%20%20%3Ccircle%20cx%3D%22218%22%20cy%3D%2234%22%20r%3D%2216%22%20fill%3D%22%23f4ee7a%22/%3E%0A%3C/svg%3E%0A" alt="DW"><div><span id="apptitle">출석체크</span><small id="subtitle"></small></div></div><button class="whoami" id="whoami" data-act="profile"></button></div>
   <div class="tabs" id="tabs"></div>
 </header>
 <div class="wrap" id="app"><div class="loading">불러오는 중…</div></div>
@@ -206,6 +260,7 @@ const DEMO = CONFIG.KAKAO_REST_KEY.startsWith("YOUR_") || CONFIG.FIREBASE.apiKey
 // 카카오에 등록한 Redirect URI와 똑같아야 해요 (사이트 첫 화면이면 끝에 "/" 없이)
 const PAGE_URL = location.origin + (location.pathname === "/" ? "" : location.pathname);
 const WD = ["일","월","화","수","목","금","토"];
+const LOGO = "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%20225%22%20role%3D%22img%22%20aria-label%3D%22DW%22%3E%0A%20%20%3Cg%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%2234%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%0A%20%20%20%20%3Cpath%20d%3D%22M39%2029%20H108%20A83%2083%200%200%201%20108%20195%20H39%22/%3E%0A%20%20%20%20%3Cline%20x1%3D%22246%22%20y1%3D%22196%22%20x2%3D%22304%22%20y2%3D%2229%22/%3E%0A%20%20%20%20%3Cline%20x1%3D%22314%22%20y1%3D%22186%22%20x2%3D%22372%22%20y2%3D%2229%22/%3E%0A%20%20%3C/g%3E%0A%20%20%3Ccircle%20cx%3D%22218%22%20cy%3D%2234%22%20r%3D%2216%22%20fill%3D%22%23f4ee7a%22/%3E%0A%3C/svg%3E%0A";
 // Firestore (이 버전 전용):
 //   v2_members/{id} = {name, gender, bday, byear, phone, memo(순장 메모), selfMemo(본인 메모), kakaoId}
 //   v2_events/{id}  = {date, time, title, marks:{id:"o"|"x"}, reasons:{id:text}, rsvp:{id:"yes"|"no"}, rsvpReason:{id:text}}
@@ -396,6 +451,7 @@ function render(){
     hdr.style.display = "none";
     $app.innerHTML = `
       <div class="lock">
+        <img class="biglogo" src="${LOGO}" alt="DW">
         <h1>${esc(CONFIG.GROUP_NAME)}</h1>
         <p>순장·교역자 전용 출석체크예요<br>카카오로 로그인해 주세요</p>
         ${DEMO ? `
