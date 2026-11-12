@@ -197,7 +197,8 @@ const CONFIG = {
 /* ========================================================= */
 
 const DEMO = CONFIG.KAKAO_REST_KEY.startsWith("YOUR_") || CONFIG.FIREBASE.apiKey.startsWith("YOUR_");
-const PAGE_URL = location.origin + location.pathname;
+// 카카오에 등록한 Redirect URI와 똑같아야 해요 (사이트 첫 화면이면 끝에 "/" 없이)
+const PAGE_URL = location.origin + (location.pathname === "/" ? "" : location.pathname);
 const WD = ["일","월","화","수","목","금","토"];
 // Firestore (이 버전 전용):
 //   v2_members/{id} = {name, gender, bday, byear, phone, memo(순장 메모), selfMemo(본인 메모), kakaoId}
