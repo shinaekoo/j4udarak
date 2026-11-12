@@ -89,6 +89,9 @@
   .reason-row input::placeholder{color:#b98a84}
   .row.has-reason{border-bottom:0}
   .reason-row:last-child{border-bottom:0}
+  .mk.reason-mk{border-style:dashed;border-color:#e3b9b3;color:var(--no);padding:9px 10px}
+  .mk.reason-mk.has{border-style:solid;background:var(--no-soft)}
+  .reason-inline{margin-top:4px;font-size:13px;color:var(--no);font-weight:600}
   .reason-btn{border:1px dashed #e3b9b3;background:#fff;color:var(--no);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700}
   .reason-text{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--no);background:var(--no-soft);border-radius:10px;padding:8px 12px}
   .reason-text span{flex:1}
@@ -358,19 +361,16 @@ function viewCheck(){
       <button class="btn" data-act="restAbsent">남은 사람 모두 결석</button>
       <button class="btn" data-act="copy">카톡용 복사</button>
     </div>
-    <div class="card">${list.length ? "" : `<div class="empty">${checkFilter==="o"?"아직 출석한 사람이 없어요.":"결석한 사람이 없어요."}</div>`}${list.map(m=>{ const absent = e.marks[m.id]==="x", reason = (e.reasons||{})[m.id]||""; return `
-      <div class="row ${absent?"has-reason":""}">
-        <div><div class="name">${nameTag(m)}</div>${memberInfo(m)}${memoBlock(m,false)}</div>
+    <div class="card">${list.length ? "" : `<div class="empty">${checkFilter==="o"?"아직 출석한 사람이 없어요.":"결석한 사람이 없어요."}</div>`}${list.map(m=>{ const absent = e.marks[m.id]==="x", reason = (e.reasons||{})[m.id]||"", open = absent && reasonOpen.has(m.id); return `
+      <div class="row ${open?"has-reason":""}">
+        <div style="min-width:0"><div class="name">${nameTag(m)}</div>${memberInfo(m,{phone:false})}${memoBlock(m,false)}${absent && reason && !open ? `<div class="reason-inline">사유: ${esc(reason)}</div>` : ""}</div>
         <div class="marks">
+          ${absent ? `<button class="mk reason-mk ${reason?"has":""}" data-act="reasonOpen" data-id="${m.id}">${reason?"사유":"+사유"}</button>` : ""}
           <button class="mk yes ${e.marks[m.id]==="o"?"on":""}" data-act="mark" data-id="${m.id}" data-v="o">출석</button>
           <button class="mk no ${absent?"on":""}" data-act="mark" data-id="${m.id}" data-v="x">결석</button>
         </div>
       </div>
-      ${!absent ? "" : reasonOpen.has(m.id)
-        ? `<div class="reason-row"><input data-reason="${m.id}" value="${esc(reason)}" maxlength="60" placeholder="결석 사유 (예: 출장, 아파서)" enterkeyhint="done"></div>`
-        : reason
-          ? `<div class="reason-row"><div class="reason-text"><span>사유: ${esc(reason)}</span><button class="link" data-act="reasonOpen" data-id="${m.id}">수정</button></div></div>`
-          : `<div class="reason-row"><button class="reason-btn" data-act="reasonOpen" data-id="${m.id}">+ 사유 입력</button></div>`}`; }).join("")}</div>` : `<div class="card"><div class="empty">순원이 없어요. 아래에서 바로 추가할 수 있어요.</div></div>`}
+      ${open ? `<div class="reason-row"><input data-reason="${m.id}" value="${esc(reason)}" maxlength="60" placeholder="결석 사유 (예: 출장, 아파서)" enterkeyhint="done"></div>` : ""}`; }).join("")}</div>` : `<div class="card"><div class="empty">순원이 없어요. 아래에서 바로 추가할 수 있어요.</div></div>`}
     <div class="add">
       <input id="addName" placeholder="순원 추가 (쉼표로 여러 명)" maxlength="60">
       <button class="btn primary" data-act="addMember">추가</button>
