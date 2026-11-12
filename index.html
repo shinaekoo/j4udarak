@@ -127,7 +127,7 @@ const CONFIG = {
   messagingSenderId: "956597071783",
   appId: "1:956597071783:web:68c888e812316699769082",
   measurementId: "G-4YQZCZ2FPD"
-    appId: ""
+ appId: ""
   },
   // 처음 다락방장 카카오 회원번호 (로그인 후 프로필 메뉴에서 확인).
   // 이후 다락방장·순장 지정은 '설정' 탭에서 할 수 있어요.
@@ -181,7 +181,7 @@ async function remove(col, id){
 function persistDemo(){ localStorage.setItem("att_demo2", JSON.stringify(store)); }
 function seedDemo(){
   const soons = { s1:["김하늘","이도윤","박서연","최민준","정지우"], s2:["한예린","오세훈","윤지아","장민서"], s3:["임태양","서다은","강준호","노유나","문가람"] };
-  Object.keys(soons).forEach((sid,i)=> store.soons[sid] = { name:`${i+1}순`, order:i });
+  Object.entries(soons).forEach(([sid,names],i)=> store.soons[sid] = { name:`${names[0]} 순`, leaderName:names[0], leaderUid:`${sid}_0`, order:i });
   Object.entries(soons).forEach(([sid,names])=> names.forEach((n,i)=>{
     store.members[`${sid}_${i}`] = { name:n, nickname:n, image:"", soonId:sid, role: i===0?"soon":"member" };
   }));
@@ -234,7 +234,8 @@ const memberName = uid => { const m=store.members[uid]; return m ? (m.name || m.
 const soonList = ()=> Object.entries(store.soons).map(([id,s])=>({id,...s})).sort((a,b)=>(a.order??0)-(b.order??0) || a.name.localeCompare(b.name,"ko"));
 const soonName = sid => sid && store.soons[sid] ? store.soons[sid].name : "순 미배정";
 const byName = (a,b)=> memberName(a).localeCompare(memberName(b),"ko");
-const membersOf = sid => Object.keys(store.members).filter(u => sid==="none" ? !store.soons[store.members[u].soonId] : store.members[u].soonId===sid).sort(byName);
+const inGroup = u => !(store.members[u].role==="darak" && !store.soons[store.members[u].soonId]);
+const membersOf = sid => Object.keys(store.members).filter(inGroup).filter(u => sid==="none" ? !store.soons[store.members[u].soonId] : store.members[u].soonId===sid).sort(byName);
 const isDarak = (uid=user?.id)=> !!uid && ((!DEMO && CONFIG.ADMIN_IDS.includes(uid)) || store.members[uid]?.role==="darak");
 const isSoonjang = (uid=user?.id)=> !!uid && store.members[uid]?.role==="soon" && !!store.soons[store.members[uid]?.soonId];
 const mySoon = ()=> store.members[user.id]?.soonId;
@@ -242,7 +243,7 @@ const canManage = ()=> isDarak() || isSoonjang();
 // 내가 볼 수 있는 멤버 범위
 function scopeUids(filter){
   if (isDarak()){
-    if (!filter || filter==="all") return Object.keys(store.members).sort(byName);
+    if (!filter || filter==="all") return Object.keys(store.members).filter(inGroup).sort(byName);
     return membersOf(filter);
   }
   const s = mySoon();
@@ -342,7 +343,7 @@ async function initAuth(){
       const tok = await fetch("https://kauth.kakao.com/oauth/token", {
         method:"POST",
         headers:{ "Content-Type":"application/x-www-form-urlencoded;charset=utf-8" },
-        body:new URLSearchParams({ grant_type:"authorization_code", client_id:CONFIG.KAKAO_REST_KEY, redirect_uri:REDIRECT_URI, code })
+        body:new URLSearchParams({ grant_type:"authorization_code", client_id:CONFIG.KAKAO_REST_KEY, redirect_uri:REDIRECT_URI, code, ...(CONFIG.KAKAO_CLIENT_SECRET ? { client_secret:CONFIG.KAKAO_CLIENT_SECRET } : {}) })
       }).then(r=>r.json());
       if (!tok.access_token) throw new Error(tok.error_description || "토큰 발급 실패");
       const me = await fetch("https://kapi.kakao.com/v2/user/me", { headers:{ Authorization:"Bearer "+tok.access_token } }).then(r=>r.json());
@@ -373,13 +374,40 @@ async function afterLogin(){
   render();
   maybeAskSoon();
 }
+const clean = v => String(v||"").trim().replace(/\s+/g," ");
+let joinError = "";
 function maybeAskSoon(){
-  if (!user || isDarak() || store.soons[mySoon()] || !soonList().length || $bg.classList.contains("open")) return;
+  if (!user || isDarak() || store.soons[mySoon()]) return;
+  if ($bg.classList.contains("open") && !$modal.querySelector("#j_name")) return;
+  const leaders = soonList().map(x=>x.leaderName).filter(Boolean);
+  const m = store.members[user.id] || {};
   openModal(`
-    <h3>어느 순이세요?</h3>
-    <div class="ev-meta" style="margin-bottom:16px">한 번 고르면 이후 변경은 다락방장이 해 줄 수 있어요.</div>
-    ${soonList().map(s=>`<button class="soon-pick" data-act="pickSoon" data-id="${s.id}">${esc(s.name)} <span style="font-weight:500;color:var(--sub);font-size:13px">· ${membersOf(s.id).length}명</span></button>`).join("")}
+    <h3>반가워요! 👋</h3>
+    <div class="ev-meta" style="margin-bottom:16px">처음 한 번만 입력하면 돼요.</div>
+    <div class="field"><label>내 이름</label><input id="j_name" maxlength="12" value="${esc(m.name && m.name!==m.nickname ? m.name : "")}" placeholder="실명으로 적어 주세요 (예: 홍길동)"></div>
+    <div class="field"><label>순장 이름</label><input id="j_leader" maxlength="12" list="j_leaders" placeholder="예: 김하늘"><datalist id="j_leaders">${leaders.map(n=>`<option value="${esc(n)}">`).join("")}</datalist></div>
+    <div class="ev-meta" style="font-size:12px;margin:-2px 0 12px">순장님은 두 칸 모두 본인 이름을 넣으세요. 순이 자동으로 만들어져요.</div>
+    ${joinError?`<div style="color:var(--no);font-size:13px;margin-bottom:10px">${esc(joinError)}</div>`:""}
+    <button class="checkin" style="margin-top:0" data-act="joinSoon">시작하기</button>
   `);
+}
+async function joinSoon(){
+  const name = clean(document.getElementById("j_name").value), leader = clean(document.getElementById("j_leader").value);
+  joinError = "";
+  if (!name || !leader){ joinError = "내 이름과 순장 이름을 모두 입력해 주세요"; return maybeAskSoon(); }
+  let soon = soonList().find(x=> clean(x.leaderName)===leader);
+  const meLeader = name===leader;
+  if (!soon && !meLeader){ joinError = `'${leader} 순'이 아직 없어요. 순장님이 먼저 로그인해야 해요. 이름을 다시 확인해 주세요.`; return maybeAskSoon(); }
+  let role = "member";
+  if (!soon){
+    const sid = "soon_"+Date.now();
+    await save("soons", sid, { name:`${leader} 순`, leaderName:leader, leaderUid:user.id, order:soonList().length });
+    soon = { id:sid }; role = "soon";
+  } else if (meLeader && (!soon.leaderUid || soon.leaderUid===user.id)){
+    await save("soons", soon.id, { leaderUid:user.id }); role = "soon";
+  }
+  await save("members", user.id, { name, soonId:soon.id, role });
+  closeModal(); toast(`${soonName(soon.id)}으로 등록했어요`); render();
 }
 
 /* ---------- 화면 ---------- */
@@ -454,7 +482,7 @@ function viewUpcoming(){
   const evs = buildEvents().filter(e=>e.date>=today);
   const uids = scopeUids(soonFilter);
   let html = noticeBlock() + soonFilterBar() + `<h2>다가오는 모임 · ${esc(scopeTitle())}</h2>`;
-  setTimeout(()=>localStorage.setItem(lastSeenKey(), String(Date.now())), 3000);
+  setTimeout(()=>{ if (user) localStorage.setItem(lastSeenKey(), String(Date.now())); }, 3000);
   if (!evs.length) return html + `<div class="empty">예정된 모임이 없어요.</div>`;
   return html + evs.map(e=>{
     const my = resp(e.id, user.id);
@@ -647,7 +675,7 @@ function viewSettings(){
 const $bg = document.getElementById("modalBg"), $modal = document.getElementById("modal");
 function openModal(html){ $modal.innerHTML = html; $bg.classList.add("open"); }
 function closeModal(){ $bg.classList.remove("open"); rosterId = null; }
-$bg.addEventListener("click", e=>{ if(e.target===$bg && !$modal.querySelector(".soon-pick")) closeModal(); });
+$bg.addEventListener("click", e=>{ if(e.target===$bg && !$modal.querySelector("#j_name")) closeModal(); });
 let rosterId = null;
 function renderRoster(){
   const e = buildEvents({ includeCancelled:true }).find(x=>x.id===rosterId); if(!e) return closeModal();
@@ -713,7 +741,7 @@ document.addEventListener("click", async ev=>{
       case "close": return closeModal();
       case "filter": soonFilter = id; return render();
       case "names": openNames.has(id)?openNames.delete(id):openNames.add(id); return render();
-      case "pickSoon": await save("members", user.id, { soonId:id }); closeModal(); toast(`${soonName(id)}으로 등록했어요`); return render();
+      case "joinSoon": return joinSoon();
       case "rsvp": {
         const cur = resp(id,user.id).rsvp, v = b.dataset.v;
         await save("responses", rid(id,user.id), { eventId:id, uid:user.id, rsvp: cur===v ? null : v, updatedAt:Date.now() });
@@ -793,7 +821,7 @@ document.addEventListener("click", async ev=>{
         const s=settings(); await save("config","settings",{ cancelled:(s.cancelled||[]).filter(d=>d!==id.slice(4)) });
         toast("복구했어요"); return render();
       }
-      case "demoRole": await save("members", user.id, { role:id, soonId:"s1" }); soonFilter="all"; tab="upcoming"; renderProfile(); return render();
+      case "demoRole": await save("members", user.id, { role:id, soonId: id==="darak" ? null : "s1" }); soonFilter="all"; tab="upcoming"; renderProfile(); return render();
       case "resetDemo": localStorage.removeItem("att_demo2"); localStorage.removeItem("att_demo2_user"); location.reload(); return;
     }
   }catch(e){ console.error(e); toast("저장 중 오류가 났어요"); }
@@ -806,7 +834,8 @@ document.addEventListener("change", async ev=>{
     if (el.dataset.act==="setSoon"){ await save("members", u, { soonId: el.value || null }); toast(`${memberName(u)} → ${soonName(el.value)}`); }
     if (el.dataset.act==="setRole"){
       if (el.value==="soon" && !store.soons[store.members[u].soonId]) { toast("먼저 순을 배정해 주세요"); return render(); }
-      await save("members", u, { role: el.value }); toast(`${memberName(u)} → ${({member:"순원",soon:"순장",darak:"다락방장"})[el.value]}`);
+      await save("members", u, { role: el.value });
+      if (el.value==="soon"){ const sid=store.members[u].soonId; await save("soons", sid, { leaderName: memberName(u), leaderUid:u, name:`${memberName(u)} 순` }); } toast(`${memberName(u)} → ${({member:"순원",soon:"순장",darak:"다락방장"})[el.value]}`);
     }
     render();
   }catch(e){ console.error(e); toast("저장 중 오류가 났어요"); }
@@ -815,7 +844,7 @@ document.addEventListener("change", async ev=>{
 /* ---------- 시작 ---------- */
 await initAuth();
 let started = false;
-await initData(()=>{ if (started) { if (rosterId) renderRoster(); render(); } });
+await initData(()=>{ if (started) { if (rosterId) renderRoster(); render(); maybeAskSoon(); } });
 started = true;
 if (user) await afterLogin(); else render();
 </script>
