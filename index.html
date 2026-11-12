@@ -783,12 +783,8 @@ function renderProfile(){
       </div>
     </div>`:""}
     ${(!isDarak() && !store.soons[mySoon()])?`<button class="sbtn primary" style="width:100%;padding:12px;margin-bottom:8px" data-act="openJoin">순 등록하기</button>`:""}
-    ${(!isDarak() && !isSoonjang() && store.soons[mySoon()])?`
-    <div class="card">
-      <div class="field"><label>순장이신가요? 리더 비밀번호를 넣으면 ${esc(soonName(mySoon()))}의 순장이 돼요</label><input id="p_pw" type="password" placeholder="리더 비밀번호"></div>
-      <button class="sbtn primary" data-act="becomeSoonjang">순장으로 전환</button>
-    </div>`:""}
     <button class="sbtn" style="width:100%;padding:12px;margin-bottom:8px" data-act="logout">로그아웃 (다른 카카오 계정으로 로그인)</button>
+    <button class="sbtn danger" style="width:100%;padding:12px;margin-top:8px;border:0;background:none" data-act="withdraw">탈퇴하기 (계정 지우기)</button>
     ${DEMO?`<button class="sbtn danger" style="width:100%;padding:12px" data-act="resetDemo">데모 데이터 초기화</button>`:""}`);
 }
 
@@ -813,15 +809,17 @@ document.addEventListener("click", async ev=>{
       case "joinRole": { const n=document.getElementById("j_name"); if(n) joinDraft=n.value; joinMode=id; joinError=""; return maybeAskSoon(true); }
       case "joinLater": joinSkipped = true; sessionStorage.setItem("att_join_later","1"); closeModal(); return;
       case "openJoin": closeModal(); return maybeAskSoon(true);
-      case "becomeSoonjang": {
-        const pw = document.getElementById("p_pw").value, sid = mySoon(), sn = store.soons[sid];
-        if (!CONFIG.DARAK_PASSWORD || pw !== CONFIG.DARAK_PASSWORD) return toast("비밀번호가 맞지 않아요");
-        if (sn.leaderUid && sn.leaderUid!==user.id && store.members[sn.leaderUid]) return toast("이 순에는 이미 순장이 등록되어 있어요");
-        const me = memberName(user.id);
-        if (clean(sn.leaderName) && clean(sn.leaderName)!==me && !confirm(`'${sn.name}'의 순장이 되면 순 이름이 '${me} 순'으로 바뀌어요. 계속할까요?`)) return;
-        await save("soons", sid, { leaderUid:user.id, leaderName:me, name:`${me} 순` });
-        await save("members", user.id, { role:"soon" });
-        closeModal(); toast(`${me} 순의 순장이 됐어요`); return render();
+      case "withdraw": {
+        if (!confirm("탈퇴하면 내 가입 정보와 참석·출석 기록이 모두 지워지고 되돌릴 수 없어요. 탈퇴할까요?")) return;
+        const uid = user.id, sid = store.members[uid]?.soonId;
+        for (const rid of Object.keys(store.responses).filter(k=>k.endsWith("__"+uid))) await remove("responses", rid);
+        await remove("members", uid);
+        const sn = store.soons[sid];
+        if (sn){
+          if (!Object.values(store.members).some(m=>m.soonId===sid)) await remove("soons", sid);   // 아무도 없는 순은 정리
+          else if (sn.leaderUid===uid) await save("soons", sid, { leaderUid:null });
+        }
+        logout(); toast("탈퇴했어요"); return;
       }
       case "rsvp": {
         const cur = resp(id,user.id).rsvp, v = b.dataset.v;
