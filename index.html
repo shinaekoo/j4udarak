@@ -3,122 +3,90 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>J4U 순모임 출석부</title>
+<title>J4U 순모임 출석체크</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 <style>
-  :root{
-    --bg:#f6f4ef; --card:#fff; --ink:#1f2328; --sub:#6b7078; --line:#e7e3da;
-    --accent:#2f6b4f; --accent-soft:#e3efe8; --no:#b4483c; --no-soft:#f6e3e0;
-    --kakao:#FEE500; --radius:16px;
-  }
+  :root{ --bg:#f6f4ef; --card:#fff; --ink:#1f2328; --sub:#6b7078; --line:#e7e3da;
+    --yes:#2f6b4f; --yes-soft:#e3efe8; --no:#b4483c; --no-soft:#f6e3e0; }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:Pretendard,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;-webkit-font-smoothing:antialiased}
-  button{font:inherit;cursor:pointer}
-  input,select{font:inherit}
-  .wrap{max-width:560px;margin:0 auto;padding:0 16px 96px}
-  header{position:sticky;top:0;z-index:5;background:rgba(246,244,239,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-  .hbar{max-width:560px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 16px}
-  .brand{font-weight:800;font-size:19px;letter-spacing:-.3px}
-  .brand small{display:block;font-weight:500;font-size:12px;color:var(--sub);letter-spacing:0}
-  .me{display:flex;align-items:center;gap:8px;background:none;border:0;padding:4px;color:var(--ink)}
-  .avatar{width:34px;height:34px;border-radius:50%;background:#ddd center/cover;flex:none;display:grid;place-items:center;font-weight:700;color:#fff;font-size:14px}
+  button,input{font:inherit}
+  button{cursor:pointer}
+  .wrap{max-width:560px;margin:0 auto;padding:0 16px 80px}
+  header{position:sticky;top:0;z-index:5;background:rgba(246,244,239,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .hbar{max-width:560px;margin:0 auto;padding:14px 16px 8px;font-weight:800;font-size:19px;letter-spacing:-.3px}
+  .hbar small{display:block;font-weight:500;font-size:12px;color:var(--sub)}
   .tabs{max-width:560px;margin:0 auto;display:flex;gap:4px;padding:0 12px 10px}
   .tab{flex:1;border:0;background:transparent;padding:9px 0;border-radius:10px;color:var(--sub);font-weight:600}
   .tab.on{background:var(--ink);color:#fff}
-  h2{font-size:15px;color:var(--sub);font-weight:700;margin:24px 4px 10px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px}
-  .card.today{border:2px solid var(--accent)}
-  .card.cancelled{opacity:.55}
-  .ev-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-  .ev-date{font-size:20px;font-weight:800;letter-spacing:-.4px}
-  .ev-meta{color:var(--sub);font-size:14px;margin-top:2px}
-  .badge{font-size:12px;font-weight:700;padding:4px 8px;border-radius:999px;white-space:nowrap}
-  .b-today{background:var(--accent);color:#fff}
-  .b-special{background:#f3e6c4;color:#7a5a12}
-  .b-cancel{background:#eee;color:#777}
-  .counts{display:flex;gap:6px;margin:14px 0 4px;flex-wrap:wrap}
-  .chip{border:0;background:#f1efe9;border-radius:999px;padding:6px 11px;font-size:13px;color:var(--ink)}
-  .chip b{margin-left:3px}
-  .chip.yes{background:var(--accent-soft);color:var(--accent)}
-  .chip.no{background:var(--no-soft);color:var(--no)}
-  .names{font-size:13px;color:var(--sub);line-height:1.7;margin:6px 2px 0;display:none}
-  .names.open{display:block}
-  .names strong{color:var(--ink);font-weight:600}
-  .rsvp{display:flex;gap:8px;margin-top:14px}
-  .rbtn{flex:1;padding:12px 0;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-weight:700;color:var(--sub)}
-  .rbtn.yes.on{background:var(--accent);border-color:var(--accent);color:#fff}
-  .rbtn.no.on{background:var(--no);border-color:var(--no);color:#fff}
-  .reason{display:flex;gap:6px;margin-top:8px}
-  .reason input{flex:1;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fbfaf7}
-  .reason button{white-space:nowrap;border:0;background:var(--ink);color:#fff;border-radius:10px;padding:0 14px;font-weight:600}
-  .checkin{width:100%;margin-top:12px;padding:15px 0;border:0;border-radius:12px;background:var(--accent);color:#fff;font-weight:800;font-size:16px}
-  .checkin.done{background:var(--accent-soft);color:var(--accent)}
-  .admin-row{display:flex;gap:6px;margin-top:12px;border-top:1px dashed var(--line);padding-top:12px}
-  .sbtn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600;color:var(--ink)}
-  .sbtn.danger{color:var(--no)}
-  .sbtn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
-  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 10px;text-align:center}
-  .stat .n{font-size:22px;font-weight:800}
-  .stat .l{font-size:12px;color:var(--sub);margin-top:2px}
+  h2{font-size:14px;color:var(--sub);font-weight:700;margin:22px 4px 10px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:4px 16px;margin-bottom:12px}
   .row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
   .row:last-child{border-bottom:0}
-  .row .t{font-weight:700}
-  .row .s{font-size:13px;color:var(--sub)}
-  .pill{font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;background:#f1efe9;color:var(--sub);white-space:nowrap}
-  .pill.yes{background:var(--accent-soft);color:var(--accent)}
-  .pill.no{background:var(--no-soft);color:var(--no)}
-  .field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+  .row.click{cursor:pointer}
+  .name{font-weight:700;font-size:16px}
+  .sub{font-size:13px;color:var(--sub)}
+  .marks{display:flex;gap:6px;flex:none}
+  .mk{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:9px 14px;font-weight:700;color:var(--sub);font-size:14px}
+  .mk.yes.on{background:var(--yes);border-color:var(--yes);color:#fff}
+  .mk.no.on{background:var(--no);border-color:var(--no);color:#fff}
+  .tools{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 12px}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px;font-weight:600;font-size:13px;color:var(--ink)}
+  .btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.danger{color:var(--no)}
+  .big{width:100%;margin-top:16px;padding:15px 0;border:0;border-radius:12px;background:var(--yes);color:#fff;font-weight:800;font-size:16px}
+  .form{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-top:12px}
+  .field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;min-width:0}
   .field label{font-size:13px;color:var(--sub);font-weight:600}
-  .field input,.field select{border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#fbfaf7}
+  .field input{border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#fbfaf7;min-width:0;width:100%}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .add{display:flex;gap:6px;margin:16px 0 4px}
+  .add input{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#fff}
+  .add button{white-space:nowrap}
+  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center}
+  .stat .n{font-size:22px;font-weight:800}
+  .stat .l{font-size:12px;color:var(--sub)}
+  .stat.yes .n{color:var(--yes)} .stat.no .n{color:var(--no)}
+  .back{border:0;background:none;color:var(--sub);font-weight:600;padding:16px 0 0;font-size:14px}
+  .evhead{margin-top:8px}
+  .evhead .t{font-size:22px;font-weight:800;letter-spacing:-.4px}
+  .pill{font-size:12px;font-weight:700;padding:3px 8px;border-radius:999px;background:#f1efe9;color:var(--sub);white-space:nowrap}
+  .pill.today{background:var(--yes);color:#fff}
+  .pill.done{background:var(--yes-soft);color:var(--yes)}
   .bar{height:6px;background:#eee;border-radius:3px;overflow:hidden;margin-top:6px}
-  .bar i{display:block;height:100%;background:var(--accent)}
-  .empty{text-align:center;color:var(--sub);padding:28px 0;font-size:14px}
-  /* login */
-  .login{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:24px;text-align:center}
-  .login h1{font-size:28px;margin:0 0 8px;letter-spacing:-.6px}
-  .login p{color:var(--sub);margin:0 0 32px;line-height:1.6}
-  .kakao{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;max-width:320px;background:var(--kakao);color:#191919;border:0;border-radius:12px;padding:15px 0;font-weight:700;font-size:16px}
-  .demo-note{margin-top:18px;font-size:12px;color:var(--sub);background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;max-width:320px;line-height:1.5}
-  /* modal */
-  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:20;display:none;align-items:flex-end;justify-content:center}
-  .modal-bg.open{display:flex}
-  .modal{background:var(--bg);width:100%;max-width:560px;max-height:86vh;overflow:auto;border-radius:20px 20px 0 0;padding:20px 16px 32px}
-  .modal h3{margin:0 0 4px;font-size:18px}
-  .att-btns{display:flex;gap:4px}
-  .att-btns button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700;color:var(--sub)}
-  .att-btns .a-yes.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-  .att-btns .a-no.on{background:var(--no);color:#fff;border-color:var(--no)}
+  .bar i{display:block;height:100%;background:var(--yes)}
+  .empty{text-align:center;color:var(--sub);padding:28px 0;font-size:14px;line-height:1.6}
   .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:999px;font-size:14px;opacity:0;transition:.25s;z-index:30;pointer-events:none}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .loading{text-align:center;padding:80px 0;color:var(--sub)}
-
-  .filter{display:flex;gap:6px;overflow-x:auto;padding:14px 2px 2px;scrollbar-width:none}
-  .filter button{flex:none;border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font-size:13px;font-weight:600;color:var(--sub)}
-  .filter button.on{background:var(--ink);border-color:var(--ink);color:#fff}
-  .role{font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:#f3e6c4;color:#7a5a12;margin-left:6px;vertical-align:2px}
-  .grp{font-size:12px;font-weight:700;color:var(--sub);margin:14px 0 2px}
-  .mini{border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fbfaf7;font-size:13px}
-  .soon-pick{display:block;width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:8px;font-weight:700;font-size:16px}
-  .breakdown{font-size:12px;color:var(--sub);margin-top:4px}
+  .lock{max-width:320px;margin:90px auto 0;text-align:center}
+  .lock h1{font-size:24px;margin:0 0 8px}
+  .lock p{color:var(--sub);margin:0 0 24px}
+  .lock input{width:100%;border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center;font-size:18px;background:#fff;margin-bottom:10px}
+  .demo{font-size:12px;color:var(--sub);background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:14px;line-height:1.5}
 </style>
 </head>
 <body>
-<div id="app"><div class="loading">불러오는 중…</div></div>
-<div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
+<header id="hdr" style="display:none">
+  <div class="hbar">J4U 순모임 출석체크<small id="subtitle"></small></div>
+  <div class="tabs">
+    <button class="tab on" data-tab="events">일정</button>
+    <button class="tab" data-tab="members">순원</button>
+    <button class="tab" data-tab="stats">기록</button>
+  </div>
+</header>
+<div class="wrap" id="app"><div class="loading">불러오는 중…</div></div>
 <div class="toast" id="toast"></div>
 
 <script type="module">
 /* =========================================================
-   ① 설정 — 여기만 채우면 됩니다
+   설정 — Firebase 값과 비밀번호만 채우면 됩니다
    ========================================================= */
 const CONFIG = {
   GROUP_NAME: "J4U 순모임",
-  // 카카오 개발자센터 > 내 애플리케이션 > 앱 키 > "REST API 키"
-  KAKAO_REST_KEY: "eaaf7e5dfc99217b7201ea326b81981f",
-    KAKAO_CLIENT_SECRET: "wPJCeNvvjc2irl1QT6qeM1Gxwu0rL2At",
-  // Firebase 콘솔 > 프로젝트 설정 > 내 앱(웹) > SDK 설정
+  // 이 페이지를 여는 비밀번호 (순장만 알면 됨). 빈칸("")이면 잠금 없이 열려요.
+  PASSCODE: "1234",
   FIREBASE: {
     apiKey: "AIzaSyAmv1pHlLahYythXiT15cGqlEnHJEtg9e0",
     authDomain: "darak-attendance.firebaseapp.com",
@@ -127,818 +95,289 @@ const CONFIG = {
   messagingSenderId: "956597071783",
   appId: "1:956597071783:web:68c888e812316699769082",
   measurementId: "G-4YQZCZ2FPD"
-  },
-  // 처음 다락방장 카카오 회원번호 (로그인 후 프로필 메뉴에서 확인).
-  // 이후 다락방장·순장 지정은 '설정' 탭에서 할 수 있어요.
-  ADMIN_IDS: ["0000000000"],
-  // 리더 비밀번호: 순장·다락방장으로 가입할 때 넣는 비밀번호 (꼭 바꾸세요)
-  DARAK_PASSWORD: "1234",
-  // 정기 모임 기본값 (설정 탭에서 바꿀 수 있음) 0=일 … 6=토
-  DEFAULT_REGULAR: { weekday: 6, time: "19:00", title: "다락방 모임" },
-  START_DATE: "2026-11-12",   // 이 날짜 이전 정기 모임은 만들지 않아요 (설정 탭에서 바꿀 수 있음)
-  PAST_WEEKS: 12,   // 지난 기록에 보여줄 기간
-  AHEAD_WEEKS: 8    // 다가오는 모임에 보여줄 기간
+  }
 };
 /* ========================================================= */
 
-const DEMO = CONFIG.KAKAO_REST_KEY.startsWith("YOUR_") || CONFIG.FIREBASE.apiKey.startsWith("YOUR_");
-const REDIRECT_URI = location.origin + location.pathname;
+const DEMO = CONFIG.FIREBASE.apiKey.startsWith("YOUR_");
 const WD = ["일","월","화","수","목","금","토"];
-const NO_LABEL = "참석 어려워요";
+// Firestore: simple_members/{id} = {name, createdAt}
+//            simple_events/{id}  = {date, time, title, marks:{memberId:"o"|"x"}}
+const store = { members:{}, events:{} };
+let fs = null, db = null, ready = false;
 
-/* ---------- 데이터 저장소 ---------- */
-const store = { members:{}, responses:{}, events:{}, soons:{}, notices:{}, settings:null };
-let db = null;
-
-async function initData(onChange){
-  if (DEMO){
-    const saved = JSON.parse(localStorage.getItem("att_demo2") || "null");
-    if (saved) Object.assign(store, saved); else seedDemo();
-    onChange();
-    return;
-  }
+/* ---------- 저장소 ---------- */
+async function initData(){
+  if (DEMO){ Object.assign(store, JSON.parse(localStorage.getItem("simple_demo2") || '{"members":{},"events":{}}')); return; }
   const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
-  const fs = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
-  db = { fs, ref: fs.getFirestore(initializeApp(CONFIG.FIREBASE)) };
-  // 처음 데이터가 다 들어올 때까지 기다림 (기존 가입자를 신규로 착각하지 않도록)
-  const firsts = ["members","responses","events","soons","notices"].map(col=> new Promise(res=>{
-    fs.onSnapshot(fs.collection(db.ref, col), snap=>{
-      const m = {}; snap.forEach(d=>m[d.id]=d.data()); store[col]=m; res(); onChange();
-    }, err=>{ console.error(err); res(); });
-  }));
-  firsts.push(new Promise(res=> fs.onSnapshot(fs.doc(db.ref,"config","settings"), d=>{ store.settings = d.exists()? d.data() : null; res(); onChange(); }, err=>{ console.error(err); res(); })));
-  await Promise.all(firsts);
+  fs = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+  db = fs.getFirestore(initializeApp(CONFIG.FIREBASE));
+  const first = (col, key) => new Promise(res => fs.onSnapshot(fs.collection(db, col), snap => {
+    const m = {}; snap.forEach(d => m[d.id] = d.data()); store[key] = m; res(); if (ready) render();
+  }, err => { console.error(err); toast("데이터를 불러오지 못했어요"); res(); }));
+  await Promise.all([first("simple_members","members"), first("simple_events","events")]);
 }
-async function save(col, id, data){
-  if (col==="config"){ store.settings = {...(store.settings||{}), ...data}; }
-  else store[col][id] = {...(store[col][id]||{}), ...data};
-  if (DEMO){ persistDemo(); render(); return; }
-  const { fs, ref } = db;
-  await fs.setDoc(fs.doc(ref, col, id), data, { merge:true });
+const persist = ()=> { if (DEMO) localStorage.setItem("simple_demo2", JSON.stringify(store)); };
+async function put(col, key, id, data){
+  store[key][id] = { ...(store[key][id]||{}), ...data }; persist(); render();
+  if (!DEMO) await fs.setDoc(fs.doc(db, col, id), data, { merge:true });
 }
-async function remove(col, id){
-  delete store[col][id];
-  if (DEMO){ persistDemo(); render(); return; }
-  const { fs, ref } = db;
-  await fs.deleteDoc(fs.doc(ref, col, id));
+async function drop(col, key, id){
+  delete store[key][id]; persist(); render();
+  if (!DEMO) await fs.deleteDoc(fs.doc(db, col, id));
 }
-function persistDemo(){ localStorage.setItem("att_demo2", JSON.stringify(store)); }
-function seedDemo(){
-  const soons = { s1:["김하늘","이도윤","박서연","최민준","정지우"], s2:["한예린","오세훈","윤지아","장민서"], s3:["임태양","서다은","강준호","노유나","문가람"] };
-  Object.entries(soons).forEach(([sid,names],i)=> store.soons[sid] = { name:`${names[0]} 순`, leaderName:names[0], leaderUid:`${sid}_0`, order:i });
-  Object.entries(soons).forEach(([sid,names])=> names.forEach((n,i)=>{
-    store.members[`${sid}_${i}`] = { name:n, nickname:n, image:"", soonId:sid, role: i===0?"soon":"member" };
-  }));
-  store.members.demo_me = { name:"나(데모)", nickname:"나(데모)", image:"", soonId:"s1", role:"darak" };
-  store.notices.n1 = { authorId:"demo_me", audience:"leaders", text:"순장님들, 이번 주 모임 전에 순원들 기도제목 한 번씩 확인 부탁드려요.", createdAt:Date.now()-3600e3 };
-  store.notices.n2 = { authorId:"s1_0", audience:"soon", soonId:"s1", text:"1순 이번 주는 모임 끝나고 같이 식사해요! 못 오시는 분은 미리 알려주세요 🙂", createdAt:Date.now()-7200e3 };
-  const evs = buildEvents();
-  Object.keys(store.members).forEach(uid=>{
-    if (uid==="demo_me") return;
-    evs.forEach(e=>{
-      const r = Math.random();
-      const rec = { eventId:e.id, uid, rsvp: r<.65?"yes":r<.85?"no":null, updatedAt:Date.now() };
-      if (rec.rsvp==="no" && Math.random()<.5) rec.reason = ["출장","가족 일정","몸이 안 좋아요"][Math.floor(Math.random()*3)];
-      if (e.date < todayStr()) rec.attended = rec.rsvp==="yes" ? Math.random()<.9 : Math.random()<.15;
-      if (rec.rsvp || rec.attended!=null) store.responses[e.id+"__"+uid] = rec;
-    });
-  });
+async function setMark(eid, mid, val, quiet){
+  const e = store.events[eid]; e.marks = e.marks || {};
+  if (val) e.marks[mid] = val; else delete e.marks[mid];
+  persist(); if (!quiet) render();
+  if (!DEMO) await fs.setDoc(fs.doc(db,"simple_events",eid), { marks:{ [mid]: val || fs.deleteField() } }, { merge:true });
 }
 
-/* ---------- 날짜 ---------- */
+/* ---------- 도우미 ---------- */
 const pad = n=>String(n).padStart(2,"0");
 const ymd = d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-const todayStr = ()=>ymd(new Date());
+const today = ()=> ymd(new Date());
 const parse = s=>{ const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
-function fmtDate(s){ const d=parse(s); return `${d.getMonth()+1}월 ${d.getDate()}일 (${WD[d.getDay()]})`; }
-function fmtTime(t){ if(!t) return ""; let [h,m]=t.split(":").map(Number); const ap=h<12?"오전":"오후"; h=h%12||12; return `${ap} ${h}:${pad(m)}`; }
-
-/* ---------- 모임 목록 ---------- */
-function settings(){ return { ...CONFIG.DEFAULT_REGULAR, startDate: CONFIG.START_DATE, cancelled:[], ...(store.settings||{}) }; }
-function buildEvents({ includeCancelled=false } = {}){
-  const s = settings(), list = [];
-  let start = new Date(); start.setDate(start.getDate() - CONFIG.PAST_WEEKS*7);
-  if (s.startDate && parse(s.startDate) > start) start = parse(s.startDate);
-  const end = new Date(); end.setDate(end.getDate() + CONFIG.AHEAD_WEEKS*7);
-  if (s.weekday != null && Number(s.weekday) >= 0){
-    const d = new Date(start);
-    while (d.getDay() !== Number(s.weekday)) d.setDate(d.getDate()+1);
-    for (; d <= end; d.setDate(d.getDate()+7)){
-      const date = ymd(d), cancelled = (s.cancelled||[]).includes(date);
-      if (cancelled && !includeCancelled) continue;
-      list.push({ id:"reg_"+date, date, time:s.time, title:s.title, type:"regular", cancelled });
-    }
-  }
-  Object.entries(store.events).forEach(([id,e])=>{
-    if (e.soonId && user && !isDarak() && e.soonId!==mySoon()) return;   // 다른 순의 순 모임은 숨김
-    list.push({ id, ...e, type: e.soonId ? "soon" : "special" });
-  });
-  return list.sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time));
-}
-const resp = (eid, uid)=> store.responses[eid+"__"+uid] || {};
-const forEv = (e, uid)=> !e.soonId || store.members[uid]?.soonId===e.soonId;   // 이 모임 대상자인가
-const memberName = uid => { const m=store.members[uid]; return m ? (m.name || m.nickname || "멤버") : "멤버"; };
-
-/* ---------- 다락방 · 순 · 권한 ---------- */
-const soonList = ()=> Object.entries(store.soons).map(([id,s])=>({id,...s})).sort((a,b)=>(a.order??0)-(b.order??0) || a.name.localeCompare(b.name,"ko"));
-const soonName = sid => sid && store.soons[sid] ? store.soons[sid].name : "순 미배정";
-const byName = (a,b)=> memberName(a).localeCompare(memberName(b),"ko");
-const inGroup = u => !(store.members[u].role==="darak" && !store.soons[store.members[u].soonId]);
-const membersOf = sid => Object.keys(store.members).filter(inGroup).filter(u => sid==="none" ? !store.soons[store.members[u].soonId] : store.members[u].soonId===sid).sort(byName);
-const isDarak = (uid=user?.id)=> !!uid && ((!DEMO && CONFIG.ADMIN_IDS.includes(uid)) || store.members[uid]?.role==="darak");
-const isSoonjang = (uid=user?.id)=> !!uid && store.members[uid]?.role==="soon" && !!store.soons[store.members[uid]?.soonId];
-const mySoon = ()=> store.members[user.id]?.soonId;
-const canManage = ()=> isDarak() || isSoonjang();
-const canCancel = e => isDarak() || (e.soonId && isSoonjang() && e.soonId===mySoon());
-// 내가 볼 수 있는 멤버 범위
-function scopeUids(filter){
-  if (isDarak()){
-    if (!filter || filter==="all") return Object.keys(store.members).filter(inGroup).sort(byName);
-    return membersOf(filter);
-  }
-  const s = mySoon();
-  return store.soons[s] ? membersOf(s) : [user.id];
-}
-// 출석을 고칠 수 있는가
-const canMark = uid => isDarak() || (isSoonjang() && store.members[uid]?.soonId===mySoon());
-/* 공지: 다락방장 → 순장 전체(leaders) 또는 다락방 전체(all), 순장 → 자기 순(soon) */
-function canSeeNotice(n){
-  if (n.authorId===user.id || isDarak()) return true;
-  if (n.audience==="all") return true;
-  if (n.audience==="leaders") return isSoonjang();
-  if (n.audience==="soon") return n.soonId===mySoon();
-  return false;
-}
-const visibleNotices = ()=> Object.entries(store.notices).map(([id,n])=>({id,...n})).filter(canSeeNotice).sort((a,b)=>b.createdAt-a.createdAt);
-function audienceLabel(n){
-  if (n.audience==="leaders") return "순장 전체";
-  if (n.audience==="all") return "다락방 전체";
-  return soonName(n.soonId) + " 전체";
-}
-function fmtAgo(t){
-  const m = Math.floor((Date.now()-t)/60000);
-  if (m<1) return "방금"; if (m<60) return `${m}분 전`;
-  const h = Math.floor(m/60); if (h<24) return `${h}시간 전`;
-  const d = new Date(t); return `${d.getMonth()+1}/${d.getDate()}`;
-}
-const lastSeenKey = ()=> "att_notice_seen_"+user.id;
-let showAllNotices = false;
-function noticeBlock(){
-  const list = visibleNotices();
-  const canWrite = isDarak() || isSoonjang();
-  if (!list.length && !canWrite) return "";
-  const seen = Number(localStorage.getItem(lastSeenKey())||0);
-  const shown = showAllNotices ? list : list.slice(0,2);
-  return `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin:24px 4px 10px">
-      <h2 style="margin:0">공지${list.some(n=>n.createdAt>seen && n.authorId!==user.id)?` <span class="badge b-today" style="font-size:11px">새 공지</span>`:""}</h2>
-      ${canWrite?`<button class="sbtn primary" data-act="writeNotice">공지 쓰기</button>`:""}
-    </div>
-    ${shown.map(n=>`
-      <div class="card" style="padding:14px 16px">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-          <div style="display:flex;align-items:center;gap:8px">${avatar(n.authorId,26)}<span class="t" style="font-weight:700">${esc(memberName(n.authorId))}</span><span class="role">${roleLabel(n.authorId)||"리더"}</span></div>
-          <span class="s" style="font-size:12px;color:var(--sub)">→ ${esc(audienceLabel(n))} · ${fmtAgo(n.createdAt)}</span>
-        </div>
-        <div style="margin-top:10px;white-space:pre-wrap;line-height:1.6">${esc(n.text)}</div>
-        <div style="display:flex;gap:6px;margin-top:10px">
-          <button class="sbtn" data-act="shareNotice" data-id="${n.id}">카톡으로 보내기</button>
-          ${(n.authorId===user.id||isDarak())?`<button class="sbtn danger" data-act="deleteNotice" data-id="${n.id}">삭제</button>`:""}
-        </div>
-      </div>`).join("") || `<div class="empty" style="padding:12px 0">아직 공지가 없어요.</div>`}
-    ${list.length>2?`<button class="sbtn" style="width:100%;padding:10px" data-act="toggleNotices">${showAllNotices?"접기":`공지 ${list.length-2}개 더 보기`}</button>`:""}`;
-}
-function renderNoticeForm(){
-  const opts = isDarak()
-    ? `<option value="leaders">순장 전체에게</option><option value="all">다락방 전체에게</option>`
-    : `<option value="soon">${esc(soonName(mySoon()))} 순원 전체에게</option>`;
-  openModal(`
-    <h3>공지 쓰기</h3>
-    <div class="ev-meta" style="margin-bottom:12px">받는 사람만 이 공지를 볼 수 있어요.</div>
-    <div class="field"><label>받는 사람</label><select id="nt_aud">${opts}</select></div>
-    <div class="field"><label>내용</label><textarea id="nt_text" rows="5" maxlength="500" style="border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#fbfaf7;font:inherit;resize:vertical"></textarea></div>
-    <div style="display:flex;gap:8px">
-      <button class="sbtn" style="flex:1;padding:12px" data-act="close">취소</button>
-      <button class="sbtn primary" style="flex:2;padding:12px" data-act="postNotice">올리기</button>
-    </div>`);
-}
-
-function soonLeaderName(sid){
-  const l = membersOf(sid).filter(u=>isSoonjang(u));
-  return l.length ? memberName(l[0]) : "";
-}
-function myLine(){
-  const n = memberName(user.id);
-  if (isDarak()) return `${n}, 다락방장`;
-  const sid = mySoon();
-  if (!store.soons[sid]) return `${n}, 순 미배정`;
-  const leader = soonLeaderName(sid) || store.soons[sid].leaderName;
-  return leader ? `${n}, ${leader} 순` : `${n}, ${soonName(sid)}`;
-}
-
-function roleLabel(uid){
-  if (isDarak(uid)) return "다락방장";
-  if (isSoonjang(uid)) return "순장";
-  return "";
-}
-
-/* ---------- 카카오 로그인 ---------- */
-let user = null;
-async function initAuth(){
-  const params = new URLSearchParams(location.search);
-  const code = params.get("code");
-  if (code && !DEMO){
-    history.replaceState(null, "", location.pathname);
-    try{
-      const tok = await fetch("https://kauth.kakao.com/oauth/token", {
-        method:"POST",
-        headers:{ "Content-Type":"application/x-www-form-urlencoded;charset=utf-8" },
-        body:new URLSearchParams({ grant_type:"authorization_code", client_id:CONFIG.KAKAO_REST_KEY, redirect_uri:REDIRECT_URI, code, ...(CONFIG.KAKAO_CLIENT_SECRET ? { client_secret:CONFIG.KAKAO_CLIENT_SECRET } : {}) })
-      }).then(r=>r.json());
-      if (!tok.access_token) throw new Error(tok.error_description || "토큰 발급 실패");
-      const me = await fetch("https://kapi.kakao.com/v2/user/me", { headers:{ Authorization:"Bearer "+tok.access_token } }).then(r=>r.json());
-      const p = (me.kakao_account && me.kakao_account.profile) || {};
-      user = { id:String(me.id), nickname: p.nickname || (me.properties||{}).nickname || "멤버", image: p.thumbnail_image_url || (me.properties||{}).thumbnail_image || "" };
-      localStorage.setItem("att_user", JSON.stringify(user));
-    }catch(e){ alert("카카오 로그인에 실패했어요: " + e.message); }
-  } else {
-    user = JSON.parse(localStorage.getItem(DEMO ? "att_demo2_user" : "att_user") || "null");
-  }
-}
-function login(){
-  if (DEMO){
-    user = { id:"demo_me", nickname:"나(데모)", image:"" };
-    localStorage.setItem("att_demo2_user", JSON.stringify(user));
-    afterLogin(); return;
-  }
-  // 로그아웃한 뒤에는 카카오 로그인 화면을 다시 띄워서 다른 계정으로 들어갈 수 있게 함
-  const force = localStorage.getItem("att_force_login")==="1";
-  localStorage.removeItem("att_force_login");
-  location.href = `https://kauth.kakao.com/oauth/authorize?client_id=${CONFIG.KAKAO_REST_KEY}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code${force?"&prompt=login":""}`;
-}
-function logout(){
-  localStorage.removeItem(DEMO ? "att_demo2_user" : "att_user");
-  localStorage.setItem("att_force_login","1");
-  sessionStorage.removeItem("att_join_later");
-  user = null; closeModal(); render();
-}
-async function afterLogin(){
-  const m = store.members[user.id];
-  if (!m) await save("members", user.id, { nickname:user.nickname, name:user.nickname, image:user.image, joinedAt:Date.now() });
-  else if (m.image !== user.image || m.nickname !== user.nickname) await save("members", user.id, { nickname:user.nickname, image:user.image });
-  render();
-  maybeAskSoon();
-}
-const clean = v => String(v||"").trim().replace(/\s+/g," ");
-let joinError = "", joinMode = "member", joinDraft = "";
-let joinSkipped = sessionStorage.getItem("att_join_later")==="1";
-function maybeAskSoon(force){
-  if (!user || isDarak() || store.soons[mySoon()]) return;
-  if (joinSkipped && !force) return;
-  if ($bg.classList.contains("open") && !$modal.querySelector("#j_name")) return;
-  const leaders = soonList().map(x=>x.leaderName).filter(Boolean);
-  const roleBtn = (v,l)=>`<button class="${joinMode===v?"on":""}" data-act="joinRole" data-id="${v}">${l}</button>`;
-  const fields = {
-    member: `
-      <div class="field"><label>내 이름</label><input id="j_name" maxlength="12" value="${esc(joinDraft)}" placeholder="실명으로 적어 주세요 (예: 홍길동)"></div>
-      <div class="field"><label>순장 이름</label><input id="j_leader" maxlength="12" list="j_leaders" placeholder="예: 김하늘"><datalist id="j_leaders">${leaders.map(n=>`<option value="${esc(n)}">`).join("")}</datalist></div>
-      <div class="ev-meta" style="font-size:12px;margin:-2px 0 12px">순장님이 아직 가입 전이어도 괜찮아요.</div>`,
-    soon: `
-      <div class="field"><label>내 이름</label><input id="j_name" maxlength="12" value="${esc(joinDraft)}" placeholder="실명으로 적어 주세요 (예: 김하늘)"></div>
-      <div class="field"><label>리더 비밀번호</label><input id="j_pw" type="password"></div>
-      <div class="ev-meta" style="font-size:12px;margin:-2px 0 12px">'내 이름 + 순'으로 순이 만들어져요. 순원이 먼저 등록해 둔 순이면 그 순을 맡게 돼요.</div>`,
-    darak: `
-      <div class="field"><label>내 이름</label><input id="j_name" maxlength="12" value="${esc(joinDraft)}" placeholder="실명으로 적어 주세요"></div>
-      <div class="field"><label>리더 비밀번호</label><input id="j_pw" type="password"></div>
-      <div class="ev-meta" style="font-size:12px;margin:-2px 0 12px">다락방장은 순에 속하지 않고 모든 순을 볼 수 있어요.</div>`
-  }[joinMode];
-  openModal(`
-    <h3>반가워요! 👋</h3>
-    <div class="ev-meta" style="margin-bottom:12px">처음 한 번만 입력하면 돼요.</div>
-    <div class="filter" style="padding:0 0 14px;display:grid;grid-template-columns:repeat(3,1fr)">${roleBtn("member","순원입니다")}${roleBtn("soon","순장입니다")}${roleBtn("darak","다락방장입니다")}</div>
-    ${fields}
-    ${joinError?`<div style="color:var(--no);font-size:13px;margin-bottom:10px">${esc(joinError)}</div>`:""}
-    <button class="checkin" style="margin-top:0" data-act="joinGo">시작하기</button>
-    <button class="sbtn" style="width:100%;margin-top:8px;padding:13px 0;font-size:15px" data-act="joinLater">다음에 하기</button>
-  `);
-}
-async function joinGo(){
-  const name = clean(document.getElementById("j_name").value);
-  joinDraft = name; joinError = "";
-  if (!name){ joinError = "이름을 입력해 주세요"; return maybeAskSoon(true); }
-  if (joinMode==="darak"){
-    const pw = document.getElementById("j_pw").value;
-    if (!CONFIG.DARAK_PASSWORD || pw !== CONFIG.DARAK_PASSWORD){ joinError = "비밀번호가 맞지 않아요"; return maybeAskSoon(true); }
-    await save("members", user.id, { name, role:"darak", soonId:null });
-    closeModal(); toast("다락방장으로 등록했어요"); return render();
-  }
-  if (joinMode==="soon"){
-    const pw = document.getElementById("j_pw").value;
-    if (!CONFIG.DARAK_PASSWORD || pw !== CONFIG.DARAK_PASSWORD){ joinError = "비밀번호가 맞지 않아요"; return maybeAskSoon(true); }
-  }
-  const leader = joinMode==="soon" ? name : clean(document.getElementById("j_leader").value);
-  if (!leader){ joinError = "순장 이름을 입력해 주세요"; return maybeAskSoon(true); }
-  let soon = soonList().find(x=> clean(x.leaderName)===leader);
-  let role = "member";
-  if (joinMode==="soon"){
-    if (soon && soon.leaderUid && soon.leaderUid!==user.id){ joinError = `'${leader} 순'에는 이미 순장이 등록되어 있어요. 이름을 확인해 주세요.`; return maybeAskSoon(true); }
-    if (!soon){
-      const sid = "soon_"+Date.now();
-      await save("soons", sid, { name:`${leader} 순`, leaderName:leader, leaderUid:user.id, order:soonList().length });
-      soon = { id:sid };
-    } else await save("soons", soon.id, { leaderUid:user.id });
-    role = "soon";
-  } else if (!soon){
-    const sid = "soon_"+Date.now();
-    await save("soons", sid, { name:`${leader} 순`, leaderName:leader, leaderUid:null, order:soonList().length });
-    soon = { id:sid };
-  }
-  await save("members", user.id, { name, soonId:soon.id, role });
-  closeModal(); toast(role==="soon" ? `${soonName(soon.id)} 순장으로 등록했어요` : `${soonName(soon.id)}으로 등록했어요`); render();
-}
+const dLabel = s=>{ const d=parse(s); return `${d.getMonth()+1}월 ${d.getDate()}일 (${WD[d.getDay()]})`; };
+const tLabel = t=>{ if(!t) return ""; let [h,m]=t.split(":").map(Number); const ap=h<12?"오전":"오후"; h=h%12||12; return `${ap} ${h}:${pad(m)}`; };
+const esc = s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clean = v=>String(v||"").trim().replace(/\s+/g," ");
+const newId = p=> p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function toast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),1600); }
+const members = ()=> Object.entries(store.members).map(([id,m])=>({id,...m})).sort((a,b)=>a.name.localeCompare(b.name,"ko"));
+const events = ()=> Object.entries(store.events).map(([id,e])=>({id,...e,marks:e.marks||{}}))
+  .sort((a,b)=> (b.date+(b.time||"")).localeCompare(a.date+(a.time||"")));
+const count = (e,v)=> members().filter(m=>e.marks[m.id]===v).length;
 
 /* ---------- 화면 ---------- */
-let tab = "upcoming";
-let soonFilter = "all";   // 다락방장이 보고 있는 순
-const openNames = new Set();
+let tab = "events", openEvent = null, showForm = false, editingMember = null, editingEvent = false;
 const $app = document.getElementById("app");
-const esc = s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-function avatar(uid, size=34){
-  const m = store.members[uid] || {}; const n = memberName(uid);
-  const colors=["#2f6b4f","#7a5a12","#4b5d8a","#8a4b6f","#5f7a2f","#8a5a4b"];
-  const c = colors[[...uid].reduce((a,ch)=>a+ch.charCodeAt(0),0)%colors.length];
-  return m.image ? `<span class="avatar" style="width:${size}px;height:${size}px;background-image:url('${esc(m.image)}')"></span>`
-                 : `<span class="avatar" style="width:${size}px;height:${size}px;background:${c}">${esc(n.slice(0,1))}</span>`;
-}
-function soonFilterBar(){
-  if (!isDarak()) return "";
-  const opts = [["all","전체"], ...soonList().map(s=>[s.id,s.name])];
-  if (membersOf("none").length) opts.push(["none","미배정"]);
-  return `<div class="filter">${opts.map(([v,l])=>`<button class="${soonFilter===v?"on":""}" data-act="filter" data-id="${v}">${esc(l)}</button>`).join("")}</div>`;
-}
-function scopeTitle(){
-  if (isDarak()) return soonFilter==="all" ? "다락방 전체" : soonName(soonFilter==="none"?null:soonFilter);
-  return soonName(mySoon());
-}
 
 function render(){
-  if (!user){
+  if (CONFIG.PASSCODE && localStorage.getItem("simple_unlocked") !== CONFIG.PASSCODE){
+    document.getElementById("hdr").style.display = "none";
     $app.innerHTML = `
-      <div class="login">
-        <h1>${esc(CONFIG.GROUP_NAME)} 출석부</h1>
-        <p>모임 참석 여부를 미리 알려주고<br>당일엔 출석 체크까지 한 번에.</p>
-        <button class="kakao" data-act="login">
-          <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#191919" d="M12 3C6.48 3 2 6.48 2 10.77c0 2.77 1.86 5.2 4.66 6.57l-.95 3.48c-.08.3.26.54.52.37l4.15-2.74c.53.07 1.07.11 1.62.11 5.52 0 10-3.48 10-7.79S17.52 3 12 3z"/></svg>
-          카카오로 시작하기
-        </button>
-        ${localStorage.getItem("att_force_login")==="1" ? `<div class="ev-meta" style="margin-top:12px;font-size:13px">다른 카카오 계정으로 로그인할 수 있어요.</div>` : ""}
-        ${DEMO ? `<div class="demo-note">지금은 <b>데모 모드</b>예요. 카카오·Firebase 키를 넣기 전이라 이 기기에만 저장돼요. 들어간 뒤 프로필 메뉴에서 다락방장·순장·멤버 화면을 바꿔 볼 수 있어요.</div>` : ""}
+      <div class="lock">
+        <h1>${esc(CONFIG.GROUP_NAME)}</h1>
+        <p>출석체크 비밀번호를 입력해 주세요</p>
+        <input id="pass" type="password" inputmode="numeric" autofocus>
+        <button class="big" style="margin-top:0" data-act="unlock">열기</button>
       </div>`;
     return;
   }
-  if (tab==="manage" && !canManage()) tab="upcoming";
-  if (tab==="settings" && !isDarak()) tab="upcoming";
-  const rl = roleLabel(user.id);
-  $app.innerHTML = `
-    <header>
-      <div class="hbar">
-        <div class="brand">${esc(CONFIG.GROUP_NAME)}<small>${esc(myLine())}${DEMO?" · 데모":""}</small></div>
-        <button class="me" data-act="profile">${avatar(user.id)}</button>
-      </div>
-      <div class="tabs">
-        <button class="tab ${tab==="upcoming"?"on":""}" data-tab="upcoming">모임</button>
-        <button class="tab ${tab==="history"?"on":""}" data-tab="history">내 기록</button>
-        ${canManage()?`<button class="tab ${tab==="manage"?"on":""}" data-tab="manage">출석 관리</button>`:""}
-        ${isDarak()?`<button class="tab ${tab==="settings"?"on":""}" data-tab="settings">설정</button>`:""}
-      </div>
-    </header>
-    <div class="wrap">${tab==="upcoming"?viewUpcoming():tab==="history"?viewHistory():tab==="manage"?viewManage():viewSettings()}</div>`;
+  document.getElementById("hdr").style.display = "";
+  document.getElementById("subtitle").textContent = (DEMO ? "데모 모드 · " : "") + `순원 ${members().length}명`;
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on", b.dataset.tab===tab));
+  if (tab==="events") $app.innerHTML = openEvent && store.events[openEvent] ? viewCheck() : viewEvents();
+  else if (tab==="members") $app.innerHTML = viewMembers();
+  else $app.innerHTML = viewStats();
 }
 
-function namesBlock(e, uids){
-  const line = (label, list, withReason) => `<div><strong>${label}</strong> ${list.map(u=>esc(memberName(u)) + (withReason && resp(e.id,u).reason?` <span style="opacity:.7">(${esc(resp(e.id,u).reason)})</span>`:"")).join(", ")||"-"}</div>`;
-  const block = list => line("참석", list.filter(u=>resp(e.id,u).rsvp==="yes")) + line("어려워요", list.filter(u=>resp(e.id,u).rsvp==="no"), true) + line("미응답", list.filter(u=>!resp(e.id,u).rsvp));
-  if (isDarak() && soonFilter==="all"){
-    const groups = [...soonList().map(s=>[s.name, membersOf(s.id)]), ["미배정", membersOf("none")]].map(([n,l])=>[n,l.filter(u=>forEv(e,u))]).filter(([,l])=>l.length);
-    return groups.map(([n,l])=>`<div class="grp">${esc(n)}</div>${block(l)}`).join("");
-  }
-  return block(uids);
-}
-
-function viewUpcoming(){
-  const today = todayStr();
-  const evs = buildEvents().filter(e=>e.date>=today);
-  const uids = scopeUids(soonFilter);
-  let html = noticeBlock() + soonFilterBar() + `<h2>다가오는 모임 · ${esc(scopeTitle())}</h2>`;
-  setTimeout(()=>{ if (user) localStorage.setItem(lastSeenKey(), String(Date.now())); }, 3000);
-  if (!evs.length) return html + `<div class="empty">예정된 모임이 없어요.</div>`;
-  return html + evs.map(e=>{
-    const my = resp(e.id, user.id);
-    const allU = uids; { const uids = allU.filter(u=>forEv(e,u));
-    const yes = uids.filter(u=>resp(e.id,u).rsvp==="yes");
-    const no = uids.filter(u=>resp(e.id,u).rsvp==="no");
-    const none = uids.filter(u=>!resp(e.id,u).rsvp);
-    const attended = uids.filter(u=>resp(e.id,u).attended===true);
-    const isToday = e.date===today;
-    return `
-    <div class="card ${isToday?"today":""}">
-      <div class="ev-top">
-        <div>
-          <div class="ev-date">${fmtDate(e.date)}</div>
-          <div class="ev-meta">${esc(e.title)}${e.time?" · "+fmtTime(e.time):""}${e.place?" · "+esc(e.place):""}</div>
-        </div>
-        ${isToday?`<span class="badge b-today">오늘</span>`: e.type==="special"?`<span class="badge b-special">특별 모임</span>`: e.type==="soon"?`<span class="badge b-special" style="background:var(--accent-soft);color:var(--accent)">${esc(soonName(e.soonId))} 모임</span>`:""}
-      </div>
-      <div class="counts">
-        <button class="chip yes" data-act="names" data-id="${e.id}">참석 예정<b>${yes.length}</b></button>
-        <button class="chip no" data-act="names" data-id="${e.id}">어려워요<b>${no.length}</b></button>
-        <button class="chip" data-act="names" data-id="${e.id}">미응답<b>${none.length}</b></button>
-        ${isToday?`<span class="chip yes">출석 완료<b>${attended.length}</b></span>`:""}
-      </div>
-      <div class="names ${openNames.has(e.id)?"open":""}">${namesBlock(e, uids)}</div>
-      <div class="rsvp">
-        <button class="rbtn yes ${my.rsvp==="yes"?"on":""}" data-act="rsvp" data-id="${e.id}" data-v="yes">참석할게요</button>
-        <button class="rbtn no ${my.rsvp==="no"?"on":""}" data-act="rsvp" data-id="${e.id}" data-v="no">${NO_LABEL}</button>
-      </div>
-      ${my.rsvp==="no"?`
-      <div class="reason">
-        <input id="reason_${e.id}" maxlength="40" placeholder="사유 (선택)" value="${esc(my.reason||"")}">
-        <button data-act="reason" data-id="${e.id}">저장</button>
-      </div>`:""}
-      ${isToday?(my.attended
-        ? `<button class="checkin done" data-act="checkin" data-id="${e.id}">✓ 출석 완료 (취소하려면 탭)</button>`
-        : `<button class="checkin" data-act="checkin" data-id="${e.id}">출석 체크하기</button>`):""}
-      ${canManage()?`
-      <div class="admin-row">
-        <button class="sbtn" data-act="roster" data-id="${e.id}">출석부 열기</button>
-        ${canCancel(e)?`<button class="sbtn danger" data-act="cancelEvent" data-id="${e.id}">모임 취소</button>`:""}
-      </div>`:""}
-    </div>`; }
-  }).join("");
-}
-
-function pastEvents(){ const t=todayStr(); return buildEvents().filter(e=>e.date<=t); }
-function statsFor(uid){
-  const past = pastEvents().filter(e=> forEv(e,uid) && (e.date<todayStr() || resp(e.id,uid).attended!=null));
-  const att = past.filter(e=>resp(e.id,uid).attended===true).length;
-  const answered = buildEvents().filter(e=>resp(e.id,uid).rsvp).length;
-  return { total:past.length, att, rate: past.length? Math.round(att/past.length*100) : 0, answered };
-}
-
-function viewHistory(){
-  const st = statsFor(user.id);
-  const evs = pastEvents().reverse();
+function eventForm(e){
+  const v = e || { date: today(), time: "19:00", title: "순모임" };
   return `
-    <h2>최근 ${CONFIG.PAST_WEEKS}주</h2>
-    <div class="stats">
-      <div class="stat"><div class="n">${st.rate}%</div><div class="l">출석률</div></div>
-      <div class="stat"><div class="n">${st.att}<span style="font-size:14px;color:var(--sub)">/${st.total}</span></div><div class="l">출석 횟수</div></div>
-      <div class="stat"><div class="n">${st.answered}</div><div class="l">미리 알린 횟수</div></div>
-    </div>
-    <h2>모임별 기록</h2>
-    <div class="card" style="padding:4px 16px">
-      ${evs.length? evs.map(e=>{
-        const r = resp(e.id,user.id);
-        const pre = r.rsvp==="yes"?`<span class="pill yes">참석 예고</span>`: r.rsvp==="no"?`<span class="pill no">불참 예고</span>`:`<span class="pill">예고 없음</span>`;
-        const att = r.attended===true?`<span class="pill yes">출석</span>`: r.attended===false?`<span class="pill no">결석</span>`: e.date===todayStr()?`<span class="pill">진행 중</span>`:`<span class="pill">기록 없음</span>`;
-        return `<div class="row"><div><div class="t">${fmtDate(e.date)}</div><div class="s">${esc(e.title)}</div></div><div style="display:flex;gap:4px">${pre}${att}</div></div>`;
-      }).join("") : `<div class="empty">아직 지난 모임이 없어요.</div>`}
+    <div class="form">
+      <div class="grid2">
+        <div class="field"><label>날짜</label><input id="f_date" type="date" value="${esc(v.date)}"></div>
+        <div class="field"><label>시간 (선택)</label><input id="f_time" type="time" value="${esc(v.time||"")}"></div>
+      </div>
+      <div class="field"><label>일정 이름</label><input id="f_title" value="${esc(v.title)}" maxlength="20"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" style="flex:1;padding:12px" data-act="${e?"cancelEditEvent":"closeForm"}">취소</button>
+        <button class="btn primary" style="flex:2;padding:12px" data-act="${e?"saveEvent":"createEvent"}">${e?"저장":"일정 만들고 출석체크"}</button>
+      </div>
     </div>`;
 }
 
-/* 출석 관리: 다락방장 = 전체/순별, 순장 = 자기 순 */
-function viewManage(){
-  const uids = scopeUids(soonFilter);
-  const recent = pastEvents().reverse().slice(0,8);
-  const rate = list => { let a=0,t=0; list.forEach(u=>{ const s=statsFor(u); a+=s.att; t+=s.total; }); return t? Math.round(a/t*100):0; };
-  const showBreakdown = isDarak() && soonFilter==="all";
-  const myS = settings();
-  const createCard = isSoonjang() ? `
-    <h2>${esc(soonName(mySoon()))} 모임 만들기</h2>
-    <div class="card">
-      <div class="grid2">
-        <div class="field"><label>날짜</label><input id="so_date" type="date" min="${todayStr()}"></div>
-        <div class="field"><label>시간</label><input id="so_time" type="time" value="${esc(myS.time)}"></div>
-      </div>
-      <div class="field"><label>모임 이름</label><input id="so_title" placeholder="예: 순모임, 순 나들이"></div>
-      <div class="field"><label>장소 (선택)</label><input id="so_place" placeholder="예: 카페, 교회 2층"></div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:12px"><input id="so_weekly" type="checkbox"> 같은 요일·시간으로 4주 동안 만들기</label>
-      <div class="ev-meta" style="font-size:12px;margin:-4px 0 12px">우리 순 사람들에게만 보여요.</div>
-      <button class="sbtn primary" data-act="addSoonEvent">만들기</button>
-    </div>` : "";
-  return createCard + soonFilterBar() + `
-    <h2>${esc(scopeTitle())} · 최근 ${CONFIG.PAST_WEEKS}주</h2>
-    <div class="stats">
-      <div class="stat"><div class="n">${uids.length}</div><div class="l">인원</div></div>
-      <div class="stat"><div class="n">${rate(uids)}%</div><div class="l">평균 출석률</div></div>
-      <div class="stat"><div class="n">${recent[0]? uids.filter(u=>resp(recent[0].id,u).attended===true).length : 0}</div><div class="l">최근 모임 출석</div></div>
-    </div>
-    ${showBreakdown?`
-    <h2>순별 출석률</h2>
-    <div class="card" style="padding:4px 16px">
-      ${soonList().map(s=>{ const l=membersOf(s.id); const r=rate(l); const leaders=l.filter(u=>isSoonjang(u)).map(memberName).join(", ");
-        return `<div class="row" style="display:block"><div style="display:flex;justify-content:space-between"><span class="t">${esc(s.name)} <span class="s" style="font-weight:500">${leaders?"순장 "+esc(leaders)+" · ":""}${l.length}명</span></span><span class="s">${r}%</span></div><div class="bar"><i style="width:${r}%"></i></div></div>`;
-      }).join("") || `<div class="empty">설정 탭에서 순을 만들어 주세요.</div>`}
-    </div>`:""}
-    <h2>모임별 출석</h2>
-    <div class="card" style="padding:4px 16px">
-      ${recent.map(e=>{
-        const eu = uids.filter(u=>forEv(e,u)); const n = eu.filter(u=>resp(e.id,u).attended===true).length;
-        const bd = showBreakdown && !e.soonId ? `<div class="breakdown">${soonList().map(s=>{ const l=membersOf(s.id); return `${esc(s.name)} ${l.filter(u=>resp(e.id,u).attended===true).length}/${l.length}`; }).join(" · ")}</div>` : "";
-        return `<div class="row"><div><div class="t">${fmtDate(e.date)}${e.date===todayStr()?` <span class="pill yes">오늘</span>`:""}</div><div class="s">${esc(e.title)}${e.type==="soon"?" · 순 모임":""} · 출석 ${n}/${eu.length}</div>${bd}</div>
-          <button class="sbtn" data-act="roster" data-id="${e.id}">출석부</button></div>`;
-      }).join("") || `<div class="empty">아직 지난 모임이 없어요.</div>`}
-    </div>
-    <h2>멤버별 출석률</h2>
-    <div class="card" style="padding:4px 16px">
-      ${uids.map(u=>{ const st=statsFor(u); const rl=roleLabel(u); return `
-        <div class="row" style="display:block">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div style="display:flex;align-items:center;gap:8px">${avatar(u,28)}<span class="t">${esc(memberName(u))}${rl?`<span class="role">${rl}</span>`:""}</span>${showBreakdown?`<span class="s">${esc(soonName(store.members[u].soonId))}</span>`:""}</div>
-            <span class="s">${st.att}/${st.total} · ${st.rate}%</span>
-          </div>
-          <div class="bar"><i style="width:${st.rate}%"></i></div>
-        </div>`; }).join("") || `<div class="empty">아직 멤버가 없어요.</div>`}
-    </div>`;
-}
-
-/* 설정: 다락방장만 */
-function viewSettings(){
-  const s = settings();
-  const today = todayStr();
-  const upcoming = buildEvents({ includeCancelled:true }).filter(e=>e.date>=today);
-  const soons = soonList();
-  const groups = [...soons.map(x=>[x.name, membersOf(x.id)]), ["순 미배정", membersOf("none")]].filter(([,l])=>l.length);
-  return `
-    <h2>순 관리</h2>
-    <div class="card" style="padding:4px 16px 16px">
-      ${soons.map(x=>`
-        <div class="row">
-          <div><div class="t">${esc(x.name)}</div><div class="s">${membersOf(x.id).length}명${membersOf(x.id).filter(u=>isSoonjang(u)).length?` · 순장 ${esc(membersOf(x.id).filter(u=>isSoonjang(u)).map(memberName).join(", "))}`:" · 순장 없음"}</div></div>
-          <div style="display:flex;gap:4px"><button class="sbtn" data-act="renameSoon" data-id="${x.id}">이름</button><button class="sbtn danger" data-act="deleteSoon" data-id="${x.id}">삭제</button></div>
-        </div>`).join("")}
-      <div class="reason" style="margin-top:12px"><input id="new_soon" placeholder="새 순 이름 (예: ${soons.length+1}순)"><button data-act="addSoon">추가</button></div>
-    </div>
-
-    <h2>멤버 배정 · 역할</h2>
-    <div class="card" style="padding:4px 16px">
-      ${groups.map(([n,l])=>`<div class="grp">${esc(n)}</div>` + l.map(u=>{
-        const m = store.members[u]; const fixed = !DEMO && CONFIG.ADMIN_IDS.includes(u);
-        return `<div class="row">
-          <div style="display:flex;align-items:center;gap:8px">${avatar(u,28)}<span class="t">${esc(memberName(u))}</span></div>
-          <div style="display:flex;gap:4px">
-            <select class="mini" data-act="setSoon" data-u="${u}">
-              <option value="">미배정</option>${soons.map(x=>`<option value="${x.id}" ${m.soonId===x.id?"selected":""}>${esc(x.name)}</option>`).join("")}
-            </select>
-            <select class="mini" data-act="setRole" data-u="${u}" ${fixed?"disabled":""}>
-              ${fixed?`<option>다락방장</option>`:`
-              <option value="member" ${(!m.role||m.role==="member")?"selected":""}>순원</option>
-              <option value="soon" ${m.role==="soon"?"selected":""}>순장</option>
-              <option value="darak" ${m.role==="darak"?"selected":""}>다락방장</option>`}
-            </select>
-          </div>
-        </div>`; }).join("")).join("") || `<div class="empty">아직 멤버가 없어요.</div>`}
-    </div>
-
-    <h2>정기 모임</h2>
-    <div class="card">
-      <div class="grid2">
-        <div class="field"><label>요일</label>
-          <select id="s_wd"><option value="-1" ${Number(s.weekday)<0?"selected":""}>정기 모임 없음</option>${WD.map((w,i)=>`<option value="${i}" ${Number(s.weekday)===i?"selected":""}>매주 ${w}요일</option>`).join("")}</select></div>
-        <div class="field"><label>시간</label><input id="s_time" type="time" value="${esc(s.time)}"></div>
-      </div>
-      <div class="field"><label>모임 이름</label><input id="s_title" value="${esc(s.title)}"></div>
-      <div class="field"><label>출석부 시작일 (이 날짜부터 모임이 만들어져요)</label><input id="s_start" type="date" value="${esc(s.startDate||"")}"></div>
-      <button class="sbtn primary" data-act="saveSettings">저장</button>
-    </div>
-
-    <h2>특별 모임 추가</h2>
-    <div class="card">
-      <div class="grid2">
-        <div class="field"><label>날짜</label><input id="n_date" type="date" min="${today}"></div>
-        <div class="field"><label>시간</label><input id="n_time" type="time" value="${esc(s.time)}"></div>
-      </div>
-      <div class="field"><label>모임 이름</label><input id="n_title" placeholder="예: 다락방 송년회"></div>
-      <div class="field"><label>장소 (선택)</label><input id="n_place" placeholder="예: 본당 2층"></div>
-      <button class="sbtn primary" data-act="addEvent">추가</button>
-    </div>
-
-    <h2>예정된 모임</h2>
-    <div class="card" style="padding:4px 16px">
-      ${upcoming.map(e=>`
-        <div class="row">
-          <div><div class="t" style="${e.cancelled?"text-decoration:line-through;opacity:.5":""}">${fmtDate(e.date)}</div>
-          <div class="s">${esc(e.title)} · ${fmtTime(e.time)}${e.type==="special"?" · 특별":""}</div></div>
-          ${e.cancelled?`<button class="sbtn" data-act="restoreEvent" data-id="${e.id}">취소 복구</button>`
-                       :`<button class="sbtn danger" data-act="cancelEvent" data-id="${e.id}">${e.type==="special"?"삭제":"이번만 취소"}</button>`}
-        </div>`).join("") || `<div class="empty">없음</div>`}
-    </div>`;
-}
-
-/* ---------- 모달 ---------- */
-const $bg = document.getElementById("modalBg"), $modal = document.getElementById("modal");
-function openModal(html){ $modal.innerHTML = html; $bg.classList.add("open"); }
-function closeModal(){ $bg.classList.remove("open"); rosterId = null; }
-$bg.addEventListener("click", e=>{ if(e.target===$bg && !$modal.querySelector("#j_name")) closeModal(); });
-let rosterId = null;
-function renderRoster(){
-  const e = buildEvents({ includeCancelled:true }).find(x=>x.id===rosterId); if(!e) return closeModal();
-  const uids = scopeUids(soonFilter).filter(u=>forEv(e,u));
-  const row = u => { const r=resp(e.id,u); const ok=canMark(u); return `
-    <div class="row">
-      <div style="display:flex;align-items:center;gap:8px">${avatar(u,30)}
-        <div><div class="t">${esc(memberName(u))}${roleLabel(u)?`<span class="role">${roleLabel(u)}</span>`:""}</div>
-        <div class="s">${r.rsvp==="yes"?"참석 예고":r.rsvp==="no"?"불참 예고"+(r.reason?` · ${esc(r.reason)}`:""):"예고 없음"}${r.attendedBy==="self"?" · 본인 체크":""}</div></div>
-      </div>
-      <div class="att-btns">
-        <button class="a-yes ${r.attended===true?"on":""}" data-act="mark" data-id="${e.id}" data-u="${u}" data-v="true" ${ok?"":"disabled"}>출석</button>
-        <button class="a-no ${r.attended===false?"on":""}" data-act="mark" data-id="${e.id}" data-u="${u}" data-v="false" ${ok?"":"disabled"}>결석</button>
-      </div>
+function viewEvents(){
+  const list = events(), t = today();
+  const row = e => { const o=count(e,"o"), x=count(e,"x"), total=members().length, done = total && o+x===total;
+    return `<div class="row click" data-act="open" data-id="${e.id}">
+      <div><div class="name">${esc(e.title)}</div><div class="sub">${dLabel(e.date)}${e.time?" · "+tLabel(e.time):""}</div></div>
+      <div style="text-align:right">${e.date===t?`<span class="pill today">오늘</span> `:""}${done?`<span class="pill done">체크 완료</span>`:""}
+        <div class="sub" style="margin-top:4px">출석 ${o} · 결석 ${x}</div></div>
     </div>`; };
-  let body;
-  if (isDarak() && soonFilter==="all"){
-    body = [...soonList().map(s=>[s.name, membersOf(s.id)]), ["미배정", membersOf("none")]].map(([n,l])=>[n,l.filter(u=>forEv(e,u))]).filter(([,l])=>l.length)
-      .map(([n,l])=>`<div class="grp">${esc(n)} · 출석 ${l.filter(u=>resp(e.id,u).attended===true).length}/${l.length}</div>${l.map(row).join("")}`).join("");
-  } else body = uids.map(row).join("");
-  openModal(`
-    <h3>${fmtDate(e.date)} 출석부</h3>
-    <div class="ev-meta" style="margin-bottom:12px">${esc(scopeTitle())} · ${esc(e.title)} · 출석 ${uids.filter(u=>resp(e.id,u).attended===true).length}/${uids.length}</div>
-    <div class="card" style="padding:4px 16px">${body || `<div class="empty">멤버가 없어요.</div>`}</div>
-    <button class="sbtn" style="width:100%;padding:12px" data-act="close">닫기</button>`);
+  const upcoming = list.filter(e=>e.date>=t).reverse(), past = list.filter(e=>e.date<t);
+  return `
+    ${showForm ? eventForm() : `<button class="big" data-act="newEvent">+ 일정 추가</button>`}
+    ${!members().length ? `<div class="demo">먼저 <b>순원</b> 탭에서 순원을 추가해 주세요.</div>` : ""}
+    ${upcoming.length?`<h2>예정·오늘</h2><div class="card">${upcoming.map(row).join("")}</div>`:""}
+    ${past.length?`<h2>지난 일정</h2><div class="card">${past.map(row).join("")}</div>`:""}
+    ${!list.length?`<div class="empty" style="padding-top:40px">아직 일정이 없어요.<br>모임이 있을 때마다 일정을 추가하고 출석을 체크하세요.</div>`:""}
+    ${DEMO?`<div class="demo">지금은 <b>데모 모드</b>예요 (이 기기에만 저장). Firebase 설정값을 넣으면 어느 기기에서든 같은 기록을 볼 수 있어요.</div>`:""}`;
 }
-function renderProfile(){
-  const m = store.members[user.id] || {};
-  openModal(`
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">${avatar(user.id,48)}
-      <div><h3>${esc(myLine())}</h3><div class="ev-meta">카카오 회원번호 ${esc(user.id)}</div></div></div>
-    <div class="card">
-      <div class="field"><label>모임에서 보일 이름</label><input id="p_name" maxlength="12" value="${esc(m.name||user.nickname)}"></div>
-      <button class="sbtn primary" data-act="saveName">저장</button>
+
+function viewCheck(){
+  const e = { id:openEvent, ...store.events[openEvent], marks: store.events[openEvent].marks || {} };
+  const list = members(), o = count(e,"o"), x = count(e,"x");
+  return `
+    <button class="back" data-act="back">‹ 일정 목록</button>
+    ${editingEvent ? eventForm(e) : `
+    <div class="evhead">
+      <div class="t">${esc(e.title)}</div>
+      <div class="sub">${dLabel(e.date)}${e.time?" · "+tLabel(e.time):""}</div>
+    </div>`}
+    <div class="summary">
+      <div class="stat yes"><div class="n">${o}</div><div class="l">출석</div></div>
+      <div class="stat no"><div class="n">${x}</div><div class="l">결석</div></div>
+      <div class="stat"><div class="n">${list.length-o-x}</div><div class="l">미체크</div></div>
     </div>
-    ${DEMO?`
-    <div class="card">
-      <div class="field"><label>데모: 다른 역할로 보기</label></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="sbtn ${m.role==="darak"?"primary":""}" data-act="demoRole" data-id="darak">다락방장</button>
-        <button class="sbtn ${m.role==="soon"?"primary":""}" data-act="demoRole" data-id="soon">1순 순장</button>
-        <button class="sbtn ${m.role==="member"?"primary":""}" data-act="demoRole" data-id="member">1순 순원</button>
-      </div>
-    </div>`:""}
-    ${(!isDarak() && !store.soons[mySoon()])?`<button class="sbtn primary" style="width:100%;padding:12px;margin-bottom:8px" data-act="openJoin">순 등록하기</button>`:""}
-    <button class="sbtn" style="width:100%;padding:12px;margin-bottom:8px" data-act="logout">로그아웃 (다른 카카오 계정으로 로그인)</button>
-    <button class="sbtn danger" style="width:100%;padding:12px;margin-top:8px;border:0;background:none" data-act="withdraw">탈퇴하기 (계정 지우기)</button>
-    ${DEMO?`<button class="sbtn danger" style="width:100%;padding:12px" data-act="resetDemo">데모 데이터 초기화</button>`:""}`);
+    <h2>출석체크</h2>
+    ${list.length ? `
+    <div class="tools">
+      <button class="btn" data-act="restAbsent">남은 사람 모두 결석</button>
+      <button class="btn" data-act="copy">카톡용 복사</button>
+    </div>
+    <div class="card">${list.map(m=>`
+      <div class="row">
+        <div class="name">${esc(m.name)}</div>
+        <div class="marks">
+          <button class="mk yes ${e.marks[m.id]==="o"?"on":""}" data-act="mark" data-id="${m.id}" data-v="o">출석</button>
+          <button class="mk no ${e.marks[m.id]==="x"?"on":""}" data-act="mark" data-id="${m.id}" data-v="x">결석</button>
+        </div>
+      </div>`).join("")}</div>` : `<div class="card"><div class="empty">순원이 없어요. 아래에서 바로 추가할 수 있어요.</div></div>`}
+    <div class="add">
+      <input id="addName" placeholder="순원 추가 (쉼표로 여러 명)" maxlength="60">
+      <button class="btn primary" data-act="addMember">추가</button>
+    </div>
+    <div class="tools" style="margin-top:20px">
+      ${editingEvent?"":`<button class="btn" data-act="editEvent">일정 수정</button>`}
+      <button class="btn danger" data-act="deleteEvent">일정 삭제</button>
+    </div>`;
+}
+
+function viewMembers(){
+  const list = members();
+  return `
+    <div class="add">
+      <input id="addName" placeholder="이름 (쉼표로 여러 명: 홍길동, 김하늘)" maxlength="60">
+      <button class="btn primary" data-act="addMember">추가</button>
+    </div>
+    <h2>순원 ${list.length}명</h2>
+    <div class="card">${list.map(m=> editingMember===m.id ? `
+      <div class="row">
+        <div class="add" style="margin:0;flex:1"><input id="eName" value="${esc(m.name)}" maxlength="12"></div>
+        <div class="marks"><button class="btn primary" data-act="saveMember" data-id="${m.id}">저장</button></div>
+      </div>` : `
+      <div class="row">
+        <div class="name">${esc(m.name)}</div>
+        <div class="marks">
+          <button class="btn" data-act="editMember" data-id="${m.id}">수정</button>
+          <button class="btn danger" data-act="deleteMember" data-id="${m.id}">삭제</button>
+        </div>
+      </div>`).join("") || `<div class="empty">아직 순원이 없어요.</div>`}</div>`;
+}
+
+function viewStats(){
+  const evs = events().filter(e=>Object.keys(e.marks).length), list = members();
+  if (!evs.length) return `<div class="empty" style="padding-top:60px">아직 체크한 일정이 없어요.</div>`;
+  const stat = m => { const n = evs.filter(e=>e.marks[m.id]==="o").length, t = evs.filter(e=>e.marks[m.id]).length;
+    return { n, t, r: t?Math.round(n/t*100):0 }; };
+  const avg = Math.round(evs.reduce((a,e)=>a+count(e,"o"),0)/evs.length*10)/10;
+  return `
+    <div class="summary">
+      <div class="stat"><div class="n">${evs.length}</div><div class="l">체크한 일정</div></div>
+      <div class="stat yes"><div class="n">${avg}</div><div class="l">평균 출석 인원</div></div>
+      <div class="stat"><div class="n">${list.length}</div><div class="l">순원</div></div>
+    </div>
+    <h2>순원별 출석률</h2>
+    <div class="card">${list.map(m=>{ const s=stat(m); return `
+      <div class="row" style="display:block">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="name" style="font-size:15px">${esc(m.name)}</span><span class="sub">${s.n}/${s.t} · ${s.r}%</span>
+        </div>
+        <div class="bar"><i style="width:${s.r}%"></i></div>
+      </div>`; }).join("")}</div>
+    <h2>일정별 출석</h2>
+    <div class="card">${evs.map(e=>`
+      <div class="row click" data-act="open" data-id="${e.id}">
+        <div><div class="name" style="font-size:15px">${esc(e.title)}</div><div class="sub">${dLabel(e.date)}</div></div>
+        <div class="sub">출석 ${count(e,"o")} · 결석 ${count(e,"x")}</div>
+      </div>`).join("")}</div>`;
 }
 
 /* ---------- 동작 ---------- */
-function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),1600); }
-const rid = (eid,uid)=> eid+"__"+uid;
+async function addMembers(){
+  const input = document.getElementById("addName");
+  const names = input.value.split(/[,，\n]/).map(clean).filter(Boolean);
+  if (!names.length) return toast("이름을 입력해 주세요");
+  const exists = new Set(members().map(m=>m.name));
+  let added = 0;
+  for (const n of names){ if (exists.has(n)) continue; exists.add(n); await put("simple_members","members", newId("m_"), { name:n, createdAt:Date.now() }); added++; }
+  toast(added ? `${added}명 추가했어요` : "이미 있는 이름이에요");
+  document.getElementById("addName")?.focus();
+}
+function readEventForm(){
+  const date = document.getElementById("f_date").value, title = clean(document.getElementById("f_title").value);
+  if (!date || !title) { toast("날짜와 일정 이름을 입력해 주세요"); return null; }
+  return { date, time: document.getElementById("f_time").value, title };
+}
 
 document.addEventListener("click", async ev=>{
-  const tb = ev.target.closest("[data-tab]");
-  if (tb){ tab = tb.dataset.tab; render(); window.scrollTo(0,0); return; }
-  const b = ev.target.closest("[data-act]"); if(!b || b.tagName==="SELECT") return;
-  const { act, id } = b.dataset;
+  const t = ev.target.closest("[data-tab]");
+  if (t){ tab=t.dataset.tab; openEvent=null; showForm=false; editingMember=null; editingEvent=false; render(); window.scrollTo(0,0); return; }
+  const b = ev.target.closest("[data-act]"); if(!b) return;
+  const { act, id, v } = b.dataset;
   try{
     switch(act){
-      case "login": return login();
-      case "logout": return logout();
-      case "profile": return renderProfile();
-      case "close": return closeModal();
-      case "filter": soonFilter = id; return render();
-      case "names": openNames.has(id)?openNames.delete(id):openNames.add(id); return render();
-      case "joinGo": return joinGo();
-      case "joinRole": { const n=document.getElementById("j_name"); if(n) joinDraft=n.value; joinMode=id; joinError=""; return maybeAskSoon(true); }
-      case "joinLater": joinSkipped = true; sessionStorage.setItem("att_join_later","1"); closeModal(); return;
-      case "openJoin": closeModal(); return maybeAskSoon(true);
-      case "withdraw": {
-        if (!confirm("탈퇴하면 내 가입 정보와 참석·출석 기록이 모두 지워지고 되돌릴 수 없어요. 탈퇴할까요?")) return;
-        const uid = user.id, sid = store.members[uid]?.soonId;
-        for (const rid of Object.keys(store.responses).filter(k=>k.endsWith("__"+uid))) await remove("responses", rid);
-        await remove("members", uid);
-        const sn = store.soons[sid];
-        if (sn){
-          if (!Object.values(store.members).some(m=>m.soonId===sid)) await remove("soons", sid);   // 아무도 없는 순은 정리
-          else if (sn.leaderUid===uid) await save("soons", sid, { leaderUid:null });
-        }
-        logout(); toast("탈퇴했어요"); return;
+      case "unlock": {
+        if (document.getElementById("pass").value !== CONFIG.PASSCODE) return toast("비밀번호가 맞지 않아요");
+        localStorage.setItem("simple_unlocked", CONFIG.PASSCODE); return render();
       }
-      case "rsvp": {
-        const cur = resp(id,user.id).rsvp, v = b.dataset.v;
-        await save("responses", rid(id,user.id), { eventId:id, uid:user.id, rsvp: cur===v ? null : v, updatedAt:Date.now() });
-        toast(cur===v ? "응답을 취소했어요" : v==="yes" ? "참석으로 알렸어요" : "참석이 어렵다고 알렸어요");
-        return render();
+      case "newEvent": showForm=true; return render();
+      case "closeForm": showForm=false; return render();
+      case "createEvent": {
+        const data = readEventForm(); if (!data) return;
+        const eid = newId("e_"); showForm=false; openEvent=eid;
+        await put("simple_events","events", eid, { ...data, marks:{}, createdAt:Date.now() });
+        window.scrollTo(0,0); return toast("일정을 만들었어요");
       }
-      case "reason": {
-        const val = document.getElementById("reason_"+id).value.trim();
-        await save("responses", rid(id,user.id), { reason:val, updatedAt:Date.now() });
-        return toast("사유를 저장했어요");
+      case "open": openEvent=id; tab="events"; editingEvent=false; render(); return window.scrollTo(0,0);
+      case "back": openEvent=null; editingEvent=false; return render();
+      case "editEvent": editingEvent=true; return render();
+      case "cancelEditEvent": editingEvent=false; return render();
+      case "saveEvent": { const data = readEventForm(); if (!data) return; editingEvent=false; await put("simple_events","events", openEvent, data); return toast("저장했어요"); }
+      case "deleteEvent": {
+        if (!confirm("이 일정과 출석 기록을 삭제할까요?")) return;
+        const eid = openEvent; openEvent=null; editingEvent=false; await drop("simple_events","events", eid); return toast("삭제했어요");
       }
-      case "checkin": {
-        const done = resp(id,user.id).attended===true;
-        await save("responses", rid(id,user.id), { eventId:id, uid:user.id, attended: done ? null : true, attendedBy: done ? null : "self", checkedAt: Date.now() });
-        toast(done ? "출석을 취소했어요" : "출석 완료! 🙌");
-        return render();
+      case "mark": { const cur = (store.events[openEvent].marks||{})[id]; return setMark(openEvent, id, cur===v ? null : v); }
+      case "restAbsent": {
+        const marks = store.events[openEvent].marks || {}, rest = members().filter(m=>!marks[m.id]);
+        if (!rest.length) return toast("남은 사람이 없어요");
+        for (const m of rest) await setMark(openEvent, m.id, "x", true);
+        render(); return toast(`${rest.length}명을 결석으로 체크했어요`);
       }
-      case "writeNotice": return renderNoticeForm();
-      case "toggleNotices": showAllNotices = !showAllNotices; return render();
-      case "postNotice": {
-        const text = document.getElementById("nt_text").value.trim(); if (!text) return toast("내용을 입력해 주세요");
-        const aud = document.getElementById("nt_aud").value;
-        if (aud==="soon" && !isSoonjang()) return; if (aud!=="soon" && !isDarak()) return;
-        await save("notices", "nt_"+Date.now(), { authorId:user.id, audience:aud, soonId: aud==="soon" ? mySoon() : null, text, createdAt:Date.now() });
-        closeModal(); toast("공지를 올렸어요"); return render();
+      case "copy": {
+        const e = store.events[openEvent], marks = e.marks || {}, list = members();
+        const yes = list.filter(m=>marks[m.id]==="o").map(m=>m.name), no = list.filter(m=>marks[m.id]==="x").map(m=>m.name);
+        const text = `[${CONFIG.GROUP_NAME}] ${dLabel(e.date)} ${e.title}\n출석 ${yes.length}명: ${yes.join(", ")||"-"}\n결석 ${no.length}명: ${no.join(", ")||"-"}`;
+        if (navigator.share){ try{ await navigator.share({ text }); return; }catch(_){ } }
+        await navigator.clipboard.writeText(text); return toast("복사했어요. 단톡방에 붙여넣으세요");
       }
-      case "deleteNotice": if (!confirm("공지를 삭제할까요?")) return; await remove("notices", id); return render();
-      case "shareNotice": {
-        const n = store.notices[id];
-        const msg = `[${CONFIG.GROUP_NAME} 공지 · ${audienceLabel(n)}]\n${n.text}\n\n${REDIRECT_URI}`;
-        if (navigator.share) { try{ await navigator.share({ text:msg }); }catch(_){} }
-        else { await navigator.clipboard.writeText(msg); toast("복사했어요. 단톡방에 붙여넣어 주세요"); }
-        return;
+      case "addMember": return addMembers();
+      case "editMember": editingMember=id; return render();
+      case "saveMember": {
+        const name = clean(document.getElementById("eName").value); if(!name) return toast("이름을 입력해 주세요");
+        editingMember=null; await put("simple_members","members", id, { name }); return toast("저장했어요");
       }
-      case "roster": rosterId = id; return renderRoster();
-      case "mark": {
-        const u = b.dataset.u; if (!canMark(u)) return;
-        const v = b.dataset.v==="true", cur = resp(id,u).attended;
-        await save("responses", rid(id,u), { eventId:id, uid:u, attended: cur===v ? null : v, attendedBy:"leader", checkedBy:user.id, checkedAt:Date.now() });
-        renderRoster(); return render();
+      case "deleteMember": {
+        if (!confirm(`${store.members[id].name}님을 순원 명단에서 지울까요? 지난 출석 기록에서도 빠져요.`)) return;
+        await drop("simple_members","members", id); return toast("지웠어요");
       }
-      case "saveName": {
-        const n = document.getElementById("p_name").value.trim(); if(!n) return;
-        await save("members", user.id, { name:n }); closeModal(); toast("이름을 바꿨어요"); return render();
-      }
-      case "addSoon": {
-        if (!isDarak()) return;
-        const n = document.getElementById("new_soon").value.trim(); if(!n) return toast("순 이름을 입력해 주세요");
-        await save("soons", "soon_"+Date.now(), { name:n, order:soonList().length }); toast(`${n}을 만들었어요`); return render();
-      }
-      case "renameSoon": {
-        const n = prompt("새 순 이름", soonName(id)); if (!n || !n.trim()) return;
-        await save("soons", id, { name:n.trim() }); return render();
-      }
-      case "deleteSoon": {
-        if (!confirm(`${soonName(id)}을 삭제할까요? 소속 멤버는 '미배정'이 돼요.`)) return;
-        for (const u of membersOf(id)) await save("members", u, { soonId:null, role: store.members[u].role==="soon" ? "member" : store.members[u].role });
-        await remove("soons", id); if (soonFilter===id) soonFilter="all"; return render();
-      }
-      case "saveSettings": {
-        await save("config","settings",{ weekday:Number(document.getElementById("s_wd").value), time:document.getElementById("s_time").value, title:document.getElementById("s_title").value.trim()||"다락방 모임", startDate:document.getElementById("s_start").value || CONFIG.START_DATE });
-        toast("정기 모임 설정을 저장했어요"); return render();
-      }
-      case "addEvent": {
-        const date = document.getElementById("n_date").value, title = document.getElementById("n_title").value.trim();
-        if (!date || !title) return toast("날짜와 이름을 입력해 주세요");
-        await save("events", "sp_"+Date.now(), { date, time:document.getElementById("n_time").value, title, place:document.getElementById("n_place").value.trim(), createdBy:user.id });
-        toast("특별 모임을 추가했어요"); return render();
-      }
-      case "addSoonEvent": {
-        if (!isSoonjang()) return;
-        const date = document.getElementById("so_date").value, title = document.getElementById("so_title").value.trim();
-        if (!date || !title) return toast("날짜와 모임 이름을 입력해 주세요");
-        const time = document.getElementById("so_time").value, place = document.getElementById("so_place").value.trim();
-        const times = document.getElementById("so_weekly").checked ? 4 : 1;
-        for (let k=0;k<times;k++){ const d=parse(date); d.setDate(d.getDate()+7*k);
-          await save("events", "so_"+Date.now()+"_"+k, { date:ymd(d), time, title, place, soonId:mySoon(), createdBy:user.id }); }
-        toast(times>1 ? "순 모임 4개를 만들었어요" : "순 모임을 만들었어요"); tab="upcoming"; return render();
-      }
-      case "cancelEvent": {
-        const ev = buildEvents({ includeCancelled:true }).find(x=>x.id===id);
-        if (!ev || !canCancel(ev) || !confirm("이 모임을 취소할까요?")) return;
-        if (id.startsWith("reg_")){ const s=settings(); await save("config","settings",{ cancelled:[...new Set([...(s.cancelled||[]), id.slice(4)])] }); }
-        else await remove("events", id);
-        toast("모임을 취소했어요"); return render();
-      }
-      case "restoreEvent": {
-        const s=settings(); await save("config","settings",{ cancelled:(s.cancelled||[]).filter(d=>d!==id.slice(4)) });
-        toast("복구했어요"); return render();
-      }
-      case "demoRole": await save("members", user.id, { role:id, soonId: id==="darak" ? null : "s1" }); soonFilter="all"; tab="upcoming"; renderProfile(); return render();
-      case "resetDemo": localStorage.removeItem("att_demo2"); localStorage.removeItem("att_demo2_user"); location.reload(); return;
     }
   }catch(e){ console.error(e); toast("저장 중 오류가 났어요"); }
 });
-
-document.addEventListener("change", async ev=>{
-  const el = ev.target; if (!isDarak() || !el.dataset.act) return;
-  const u = el.dataset.u;
-  try{
-    if (el.dataset.act==="setSoon"){ await save("members", u, { soonId: el.value || null }); toast(`${memberName(u)} → ${soonName(el.value)}`); }
-    if (el.dataset.act==="setRole"){
-      if (el.value==="soon" && !store.soons[store.members[u].soonId]) { toast("먼저 순을 배정해 주세요"); return render(); }
-      await save("members", u, { role: el.value });
-      if (el.value==="soon"){ const sid=store.members[u].soonId; await save("soons", sid, { leaderName: memberName(u), leaderUid:u, name:`${memberName(u)} 순` }); } toast(`${memberName(u)} → ${({member:"순원",soon:"순장",darak:"다락방장"})[el.value]}`);
-    }
-    render();
-  }catch(e){ console.error(e); toast("저장 중 오류가 났어요"); }
+document.addEventListener("keydown", e=>{
+  if (e.key!=="Enter") return;
+  if (e.target.id==="addName") addMembers();
+  if (e.target.id==="eName") document.querySelector('[data-act="saveMember"]')?.click();
+  if (e.target.id==="pass") document.querySelector('[data-act="unlock"]')?.click();
 });
 
-/* ---------- 시작 ---------- */
-await initAuth();
-let started = false;
-await initData(()=>{ if (started) { if (rosterId) renderRoster(); render(); maybeAskSoon(); } });
-started = true;
-if (user) await afterLogin(); else render();
+await initData();
+ready = true;
+render();
 </script>
 </body>
 </html>
