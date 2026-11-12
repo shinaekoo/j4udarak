@@ -371,12 +371,13 @@ function viewMembers(){
     </div>
     <div class="card">${list.map(m=> editingMember===m.id ? `
       <div style="padding:12px 0;border-bottom:1px solid var(--line)">
-        <div class="field"><label>이름</label><input id="eName" value="${esc(m.name)}" maxlength="12"></div>
-        <div class="field"><label>성별</label>
-          <div class="seg" id="eGender" data-v="${m.gender||""}">
-            <button type="button" class="${m.gender==="m"?"on":""}" data-act="pickGender" data-v="m">남</button>
-            <button type="button" class="${m.gender==="f"?"on":""}" data-act="pickGender" data-v="f">여</button>
-            <button type="button" class="${!m.gender?"on":""}" data-act="pickGender" data-v="">선택 안 함</button>
+        <div class="field"><label>이름 · 성별</label>
+          <div style="display:flex;gap:6px">
+            <input id="eName" value="${esc(m.name)}" maxlength="12" style="flex:1">
+            <div class="seg" id="eGender" data-v="${m.gender||""}" style="flex:0 0 112px">
+              <button type="button" class="${m.gender==="m"?"on":""}" data-act="pickGender" data-v="m">남</button>
+              <button type="button" class="${m.gender==="f"?"on":""}" data-act="pickGender" data-v="f">여</button>
+            </div>
           </div>
         </div>
         <div class="grid2">
@@ -504,7 +505,8 @@ document.addEventListener("click", async ev=>{
       case "cancelMember": editingMember=null; return render();
       case "sortMembers": memberSort=v; localStorage.setItem("simple_member_sort", v); return render();
       case "reasonOpen": { reasonOpen.add(id); render(); const i=document.querySelector(`[data-reason="${id}"]`); if (i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length); } return; }
-      case "pickGender": { const g=document.getElementById("eGender"); g.dataset.v=v; g.querySelectorAll("button").forEach(x=>x.classList.toggle("on", x.dataset.v===v)); return; }
+      case "pickGender": { const g=document.getElementById("eGender"); const nv = g.dataset.v===v ? "" : v;   // 같은 버튼을 다시 누르면 선택 해제
+        g.dataset.v=nv; g.querySelectorAll("button").forEach(x=>x.classList.toggle("on", x.dataset.v===nv)); return; }
       case "memoEdit": { editingMember=id; tab="members"; render(); const t=document.getElementById("eMemo"); if (t){ t.focus(); t.setSelectionRange(t.value.length,t.value.length); t.scrollIntoView({block:"center"}); } return; }
       case "memoDelete": { if (!confirm(`${store.members[id].name}님 메모를 지울까요?`)) return; await put("simple_members","members", id, { memo:"" }); return toast("메모를 지웠어요"); }
       case "contact": {
