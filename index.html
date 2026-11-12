@@ -74,6 +74,16 @@
   .sheet-bg.open{display:flex}
   .sheet{background:var(--bg);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:20px 16px 28px}
   .sheet a{display:block;text-align:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:15px 0;margin-bottom:8px;font-weight:700;color:var(--ink);text-decoration:none;font-size:16px}
+  .gender{font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;margin-left:6px;vertical-align:2px}
+  .gender.m{background:#e3ebf6;color:#3a5a8c} .gender.f{background:#f6e3ec;color:#8c3a62}
+  .memo{margin-top:6px;font-size:13px;color:var(--ink);background:#f7f5f0;border-radius:8px;padding:7px 9px;white-space:pre-wrap;line-height:1.5}
+  .memo-tools{display:inline-flex;gap:8px;margin-left:6px}
+  .link{border:0;background:none;padding:0;font-size:12px;font-weight:600;color:var(--sub);cursor:pointer}
+  .link.danger{color:var(--no)}
+  .seg{display:flex;gap:6px}
+  .seg button{flex:1;border:1px solid var(--line);background:#fbfaf7;border-radius:10px;padding:10px 0;font-weight:700;color:var(--sub)}
+  .seg button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  textarea.memo-in{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fbfaf7;font:inherit;resize:vertical;min-height:70px;width:100%}
   .demo{font-size:12px;color:var(--sub);background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:14px;line-height:1.5}
 </style>
 </head>
@@ -187,6 +197,11 @@ function memberInfo(m){
   if (m.phone) parts.push(`<button class="tel" data-act="contact" data-id="${m.id}">📞 ${esc(fmtPhone(m.phone))}</button>`);
   return parts.length ? `<div class="info">${parts.join("")}</div>` : "";
 }
+const nameTag = m => `${esc(m.name)}${m.gender==="m"?`<span class="gender m">남</span>`:m.gender==="f"?`<span class="gender f">여</span>`:""}`;
+function memoBlock(m, tools){
+  if (!m.memo) return tools ? `<div style="margin-top:6px"><button class="link" data-act="memoEdit" data-id="${m.id}">+ 메모 추가</button></div>` : "";
+  return `<div class="memo">${esc(m.memo)}</div>` + (tools ? `<div style="margin-top:4px"><span class="memo-tools"><button class="link" data-act="memoEdit" data-id="${m.id}">메모 수정</button><button class="link danger" data-act="memoDelete" data-id="${m.id}">메모 삭제</button></span></div>` : "");
+}
 const upcomingBdays = ()=> members().filter(m=>m.bday).map(m=>({...m, dd:daysToBday(m.bday)})).filter(m=>m.dd<=7).sort((a,b)=>a.dd-b.dd);
 function birthdayToasts(){
   const key = "simple_bday_seen_" + today();
@@ -289,7 +304,7 @@ function viewCheck(){
     </div>
     <div class="card">${list.map(m=>`
       <div class="row">
-        <div><div class="name">${esc(m.name)}</div>${memberInfo(m)}</div>
+        <div><div class="name">${nameTag(m)}</div>${memberInfo(m)}${memoBlock(m,false)}</div>
         <div class="marks">
           <button class="mk yes ${e.marks[m.id]==="o"?"on":""}" data-act="mark" data-id="${m.id}" data-v="o">출석</button>
           <button class="mk no ${e.marks[m.id]==="x"?"on":""}" data-act="mark" data-id="${m.id}" data-v="x">결석</button>
@@ -316,17 +331,25 @@ function viewMembers(){
     <div class="card">${list.map(m=> editingMember===m.id ? `
       <div style="padding:12px 0;border-bottom:1px solid var(--line)">
         <div class="field"><label>이름</label><input id="eName" value="${esc(m.name)}" maxlength="12"></div>
+        <div class="field"><label>성별</label>
+          <div class="seg" id="eGender" data-v="${m.gender||""}">
+            <button type="button" class="${m.gender==="m"?"on":""}" data-act="pickGender" data-v="m">남</button>
+            <button type="button" class="${m.gender==="f"?"on":""}" data-act="pickGender" data-v="f">여</button>
+            <button type="button" class="${!m.gender?"on":""}" data-act="pickGender" data-v="">선택 안 함</button>
+          </div>
+        </div>
         <div class="grid2">
           <div class="field"><label>생일 (예: 3/14)</label><input id="eBday" value="${m.bday?esc(m.bday.replace("-","/")):""}" inputmode="numeric" placeholder="월/일"></div>
           <div class="field"><label>전화번호</label><input id="ePhone" type="tel" value="${esc(m.phone||"")}" placeholder="010-0000-0000"></div>
         </div>
+        <div class="field"><label>메모</label><textarea id="eMemo" class="memo-in" maxlength="300" placeholder="기도제목, 근황 등">${esc(m.memo||"")}</textarea></div>
         <div style="display:flex;gap:8px">
           <button class="btn" style="flex:1" data-act="cancelMember">취소</button>
           <button class="btn primary" style="flex:2" data-act="saveMember" data-id="${m.id}">저장</button>
         </div>
       </div>` : `
       <div class="row">
-        <div><div class="name">${esc(m.name)}</div>${memberInfo(m)}</div>
+        <div style="min-width:0;flex:1"><div class="name">${nameTag(m)}</div>${memberInfo(m)}${memoBlock(m,true)}</div>
         <div class="marks">
           <button class="btn" data-act="editMember" data-id="${m.id}">수정</button>
           <button class="btn danger" data-act="deleteMember" data-id="${m.id}">삭제</button>
@@ -428,9 +451,14 @@ document.addEventListener("click", async ev=>{
         const bday = parseBday(document.getElementById("eBday").value);
         if (bday===null) return toast("생일은 3/14처럼 월/일로 적어 주세요");
         const phone = fmtPhone(document.getElementById("ePhone").value);
-        editingMember=null; await put("simple_members","members", id, { name, bday, phone }); return toast("저장했어요");
+        const gender = document.getElementById("eGender").dataset.v || "";
+        const memo = document.getElementById("eMemo").value.trim();
+        editingMember=null; await put("simple_members","members", id, { name, bday, phone, gender, memo }); return toast("저장했어요");
       }
       case "cancelMember": editingMember=null; return render();
+      case "pickGender": { const g=document.getElementById("eGender"); g.dataset.v=v; g.querySelectorAll("button").forEach(x=>x.classList.toggle("on", x.dataset.v===v)); return; }
+      case "memoEdit": { editingMember=id; tab="members"; render(); const t=document.getElementById("eMemo"); if (t){ t.focus(); t.setSelectionRange(t.value.length,t.value.length); t.scrollIntoView({block:"center"}); } return; }
+      case "memoDelete": { if (!confirm(`${store.members[id].name}님 메모를 지울까요?`)) return; await put("simple_members","members", id, { memo:"" }); return toast("메모를 지웠어요"); }
       case "contact": {
         const m = store.members[id], num = telDigits(m.phone);
         document.getElementById("sheet").innerHTML = `
